@@ -62,8 +62,14 @@ export default function SessionDetailPage() {
     [s?.id, s?.status],
   );
   const signals = useAsync(
-    () => (s && s.source === "SIMULATED" ? api.get<SignalTimeline>(`/sessions/${id}/signal-timeline`) : Promise.resolve(null)),
-    [s?.id],
+    () => {
+      if (!s) return Promise.resolve(null);
+      if (s.source === "SIMULATED") return api.get<SignalTimeline>(`/sessions/${id}/signal-timeline`);
+      if (s.status === "COMPLETED" || s.status === "REVIEWED")
+        return api.get<SignalTimeline>(`/sessions/${id}/signal-timeline`).catch(() => null);
+      return Promise.resolve(null);
+    },
+    [s?.id, s?.status],
   );
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playhead, setPlayhead] = useState<number | null>(null);
@@ -88,8 +94,10 @@ export default function SessionDetailPage() {
       });
     }
     if (s.source === "MOCK" && events.data) out.push(...telemetryLanes(events.data, durMs));
-    if (s.source === "SIMULATED" && signals.data) {
-      out.push(...signals.data.lanes.map((l) => ({
+    if (signals.data) {
+      // a recorded session already shows tab visibility from browser telemetry above
+      const lanes = s.source === "MOCK" ? signals.data.lanes.filter((l) => l.label !== "Tab hidden") : signals.data.lanes;
+      out.push(...lanes.map((l) => ({
         label: l.label,
         color: l.label === "Channel unknown" ? "#b8c2cc" : SIGNAL_COLOR,
         intervals: l.intervals.map((i) => ({ start: i.start_ms, end: i.end_ms })),
@@ -190,7 +198,7 @@ export default function SessionDetailPage() {
             title="Timeline"
             description={
               mock
-                ? "Ground truth from the script, the cues as shown, and browser telemetry. Click to jump in the video."
+                ? "Ground truth from the script, cues as shown, browser telemetry and, once analysed, what the detectors found in the video (10-second bins). Click to jump in the video."
                 : "Ground truth against what the simulated detectors reported, in 10-second bins. Detector output is deliberately noisy."
             }
           >

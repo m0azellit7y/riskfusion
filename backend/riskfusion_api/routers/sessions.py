@@ -517,12 +517,22 @@ def list_events(
 
 @router.get("/sessions/{sid}/signal-timeline")
 def session_signal_timeline(sid: str, db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Detector-output timeline for a simulated session (from the Parquet analytical store)."""
+    """Detector-output timeline: simulated sessions from the Parquet store, recorded sessions from the detector
+    events stored when the recording was analysed."""
     from ..models import DatasetVersion
+    from ..services.analysis import session_events_frame
+    from ..services.signals import summarise_signals
 
     s = _get(db, sid)
-    if s.source != "SIMULATED" or not s.dataset_version:
-        raise HTTPException(409, "Signal timelines from the event store exist only for simulated sessions so far.")
+    if s.source == "MOCK":
+        has_detectors = db.scalar(
+            select(func.count()).select_from(Event).where(Event.session_id == sid, Event.origin == "detector")
+        )
+        if not has_detectors:
+            raise HTTPException(409, "Analyse the recording to see what the detectors found.")
+        return summarise_signals(session_events_frame(db, sid), float(s.duration_s or 1.0))
+    if not s.dataset_version:
+        raise HTTPException(409, "No event data for this session.")
     split = db.scalar(select(DataSplit.split).where(DataSplit.session_id == s.id))
     if _sealed(s, split):
         raise HTTPException(403, "This session is in the sealed holdout. Its labels and detector output stay hidden.")

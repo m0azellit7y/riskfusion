@@ -106,6 +106,11 @@ def test_recording_is_analysed_end_to_end(client, face_video) -> None:  # type: 
     d = client.get(f"/sessions/{sid}").json()
     assert d["status"] == "COMPLETED"
     assert d["event_counts"]["presence"] >= 40 and d["event_counts"]["identity"] >= 5
+    tl = client.get(f"/sessions/{sid}/signal-timeline").json()
+    lanes = {lane["label"]: lane["intervals"] for lane in tl["lanes"]}
+    assert {"No face", "Second face", "Gaze off screen", "Phone detected"} <= set(lanes)
+    assert lanes["Second face"], "the two-face scene (30-40 s) must appear on the timeline"
+    assert lanes["No face"] or lanes["Channel unknown"], "the empty scene (20-30 s) must appear"
     ra = client.get(f"/sessions/{sid}/assessment").json()
     assert ra["schema"] == "risk_assessment.v1" and 0 <= ra["overall_risk"] <= 1
     assert "liveness" in ra["channels_missing"]  # no licensed liveness model -> explicit, never guessed

@@ -48,7 +48,11 @@ def signal_timeline(events_dir: Path, session_id: str, duration_s: float) -> dic
         columns=["ts_ms", "event_type", "p0", "p1", "p3", "label"],
         filter=pc.field("session_id") == session_id,
     )
-    df = table.to_pandas()
+    return summarise_signals(table.to_pandas(), duration_s)
+
+
+def summarise_signals(df: pd.DataFrame, duration_s: float) -> dict[str, Any]:
+    """10-second signal lanes from flat event.v1 rows — simulated (Parquet) or real (detector events in the DB)."""
     n = int(np.ceil(duration_s * 1000 / BIN_MS)) + 1
     b = (df["ts_ms"].to_numpy() // BIN_MS).astype(int).clip(0, n - 1)
     et = df["event_type"].astype(str).to_numpy()
