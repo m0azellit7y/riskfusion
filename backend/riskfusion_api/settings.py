@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     max_image_mb: int = 8
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     consent_version: str = "consent-v1.0"
+    auto_analyse: bool = True  # analyse a recording (all 11 channels + risk) as soon as it is uploaded
     retention_days: int = 180  # raw media retention ceiling; project-end purge also applies (ETH-3)
 
     @property

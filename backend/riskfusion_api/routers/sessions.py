@@ -401,6 +401,14 @@ def upload_recording(
         transition(db, s, "UPLOADED", actor, f"recording {rid} stored ({size} bytes)")
         write_mock_label(db, s, duration_s if duration_s is not None else (s.duration_s or 0.0))
     db.commit()
+    if kind == "webcam_av" and settings.auto_analyse:
+        from riskfusion.serving import DEFAULT_MODEL
+
+        from ..db import _factory
+        from ..services.analysis import queue_analysis
+
+        if (DEFAULT_MODEL / "bundle.json").exists():
+            queue_analysis(_factory(), db, storage, s, actor)  # all 11 channels + risk, in the background
     return rec
 
 

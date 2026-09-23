@@ -113,7 +113,7 @@ def test_recording_is_analysed_end_to_end(client, face_video) -> None:  # type: 
     assert lanes["No face"] or lanes["Channel unknown"], "the empty scene (20-30 s) must appear"
     ra = client.get(f"/sessions/{sid}/assessment").json()
     assert ra["schema"] == "risk_assessment.v1" and 0 <= ra["overall_risk"] <= 1
-    assert "liveness" in ra["channels_missing"]  # no licensed liveness model -> explicit, never guessed
+    assert "liveness" in ra["channels_missing"]  # a 60 s still photo: liveness is not judged in the first minute
     html = client.get(f"/sessions/{sid}/report")
     assert html.status_code == 200 and "not a finding of misconduct" in html.text
     r = client.post(f"/sessions/{sid}/review", json={"verdict": "NO_CONCERN", "note": "test"})
@@ -132,3 +132,57 @@ def test_mock_corpus_validation(client) -> None:  # type: ignore[no-untyped-def]
     assert set(rep["detector_errors"]["detectors"]) >= {"phone", "tab_hidden", "identity_mismatch"}
     assert rep["measured_config"]["written"] is False  # far below the 20-session minimum
     assert client.get("/corpus/validation").json()["detector_errors"]["n_sessions"] >= 1
+
+
+def test_upload_starts_analysis_automatically(client, face_video) -> None:  # type: ignore[no-untyped-def]
+    from riskfusion_api.settings import get_settings
+
+    video, photo = face_video
+    get_settings().auto_analyse = True
+    try:
+        p = client.post("/participants", json={"adult_confirmed": True}).json()
+        client.post(
+            f"/participants/{p['id']}/consent",
+            json={
+                "consent_version": "consent-v1.0",
+                "signed_name": "Auto Test",
+                "consent_recording": True,
+                "consent_analysis": True,
+                "consent_retention": True,
+                "understands_withdrawal": True,
+            },
+        )
+        sid = client.post(
+            "/sessions",
+            json={
+                "participant_id": p["id"],
+                "script_id": "clean",
+                "lighting": "normal",
+                "webcam_class": "hd",
+                "room_noise": "quiet",
+            },
+        ).json()["id"]
+        client.post(f"/sessions/{sid}/confirm-consent", json={"confirmed": True})
+        client.post(
+            f"/sessions/{sid}/recordings",
+            data={"kind": "enrollment_image"},
+            files={"file": ("e.jpg", photo, "image/jpeg")},
+        )
+        client.post(f"/sessions/{sid}/start", json={})
+        client.post(f"/sessions/{sid}/stop", json={"duration_s": 60})
+        client.post(
+            f"/sessions/{sid}/recordings",
+            data={"kind": "webcam_av", "duration_s": "60"},
+            files={"file": ("r.webm", video, "video/webm")},
+        )
+        for _ in range(120):  # nobody pressed "Analyse": the upload itself queued it
+            job = client.get(f"/sessions/{sid}/job").json()
+            if job and job["status"] in ("SUCCEEDED", "FAILED"):
+                break
+            time.sleep(0.5)
+        assert job["status"] == "SUCCEEDED", job
+        channels = set(client.get(f"/sessions/{sid}").json()["event_counts"])
+        assert {"presence", "identity", "liveness", "attention", "environment", "pose", "audio_voice"} <= channels
+        assert client.get(f"/sessions/{sid}/assessment").json()["schema"] == "risk_assessment.v1"
+    finally:
+        get_settings().auto_analyse = False

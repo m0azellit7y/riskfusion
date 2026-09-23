@@ -113,8 +113,10 @@ FPR from 3.6% to 2.1% but widened lighting disparity
 
 - Trained and evaluated on **simulated** data. Real-world performance is unknown until the mock-corpus validation
   (FR-3, FR-6) and, ultimately, a properly governed pilot.
-- The heuristic speaker detector (MFCC clustering) is weak; there is no licensed liveness model, so liveness is
-  always reported unavailable; gaze is a head-pose proxy.
+- Some detectors are heuristics on top of pretrained models and are weaker than dedicated models: the speaker
+  detector (MFCC clustering), liveness (blinks and micro-motion from the MediaPipe face mesh; a replayed video
+  of a real person passes), the audio-event tagger (signal processing) and gaze (a head-pose proxy). Body pose
+  is reported only when the camera framing shows the elbows; otherwise it is unavailable, never suspicious.
 - Clean sessions are sent to review at 5.3% on the holdout, above the 3% budget set on calibration data;
   budgets must be re-checked on real data before use.
 - Poor lighting, low-quality webcams and unstable connections change error rates. Reviewers must be told this.

@@ -266,7 +266,7 @@ export default function RecordPage() {
         `${id}.webm`,
         setUploadPct,
       ).promise;
-      toast("Recording uploaded and ground-truth label created.");
+      toast("Recording uploaded. Analysis of all 11 signal channels has started.");
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       nav(`/sessions/${id}`);
     } catch (e) {

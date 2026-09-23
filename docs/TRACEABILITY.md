@@ -10,10 +10,10 @@
 | FR-1 | Configurable simulator | Done | `simulator/`, `configs/simulator/v1*.yaml`; 5,000 sessions in 114–125 s; seeded, content-hashed |
 | FR-2 | Mock recording with consent | Done (software) / Needs you (60 sessions) | Recorder, consent, uploads, coverage tracker; browser E2E test |
 | FR-3 | Simulator validated against mock data | Done (code) / Needs you | `validation/mock.py` (KS per feature); `POST /corpus/validate`; runs once sessions are analysed |
-| FR-4 | Pretrained detectors, ≥ 4 channels | Done | presence, identity, attention, environment, audio; tested on a real face video |
+| FR-4 | Pretrained detectors, ≥ 4 channels | Done | all 11 channels in one pass: 8 from video/audio (SCRFD, ArcFace, head pose, YOLOX, MediaPipe face mesh / pose / palm, audio VAD, DSP audio tagger) + 3 from the browser; automatic on upload; tests with real media for each |
 | FR-5 | Browser telemetry | Done | tab, full screen, paste length, monitors, keystroke counts |
 | FR-6 | Measured detector error | Done (code) / Needs you | `measure_detector_errors`, writes `v2_measured.yaml` at ≥ 20 sessions |
-| FR-7 | Explicit UNKNOWN states | Done | all 11 channels; liveness/pose always UNKNOWN (no licensed model) |
+| FR-7 | Explicit UNKNOWN states | Done | all 11 channels; liveness UNKNOWN in the first minute, pose UNKNOWN when elbows are out of view, both audio channels UNKNOWN without an audio track |
 | FR-8 | Validation + dead letter | Done | dict and vectorised validators agree; API and simulator dead-letter |
 | FR-9 | 1 s grid with gaps | Done | `features/engine.build_grid` |
 | FR-10 | Out-of-order within 30 s | Done | `reorder_with_watermark` (unit test) |

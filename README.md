@@ -58,8 +58,11 @@ but could not be built in the development environment.
 
 1. **Record** (`docs/MOCK_PROTOCOL.md`): register an adult participant, record consent, create a session, check the
    equipment, take the enrolment photo, record, then upload.
-2. **Analyse:** on the session page choose *Analyse recording*. The detectors run on the video, then features and the
-   risk model. You get a risk score, a 90% band, a review tier, reasons, moments to check and an HTML report.
+2. **Analyse:** starts **automatically when the recording is uploaded** (or press *Analyse recording*). All 11
+   channels are extracted in one pass — face presence, identity, liveness, head pose/gaze, people and objects,
+   body pose and hands, speech and other voices, audio events, plus the browser's screen, device and typing
+   telemetry — then features and the risk model. You get a risk score, a 90% band, a review tier, reasons, moments
+   to check, a signal timeline and an HTML report.
 3. **Review:** the *Review queue* orders scored sessions by risk. Record a decision; decisions are stored apart
    from training labels, and the overturn rate is tracked.
 4. **Measure** (FR-3, FR-6): with 20 or more analysed mock sessions, `POST /corpus/validate` measures real detector error
@@ -97,6 +100,7 @@ docs/               SRS audit, plan, traceability, model card, final report, dat
 
 - Trained on simulated data with estimated detector error rates. The consented mock corpus (60 sessions) still
   has to be recorded before FR-3 and FR-6 can run on real volunteers.
-- The speaker detector is a heuristic. There is no licensed liveness model, and gaze is a head-pose proxy.
+- Some detectors are heuristics (speaker, blink-based liveness, audio events, head-pose gaze). Body pose needs the
+  elbows in view; with a head-and-shoulders webcam it is reported unavailable, which never raises a score.
 - False alerts are higher for head-covered candidates and unstable connections. Read FINAL_REPORT §4 before any use.
 - There is no authentication; the prototype is for local research use.

@@ -15,9 +15,9 @@ from sqlalchemy.orm import Session
 from riskfusion.serving import DEFAULT_MODEL, load_model, render_report, score_events, score_frame
 
 from ..db import _factory, get_db
-from ..deps import get_actor, get_storage, new_id
+from ..deps import get_actor, get_storage
 from ..models import DataSplit, ExamSession, Label, Participant, Prediction, ProcessingJob, ReviewVerdict
-from ..services.analysis import load_json, session_events_frame, start_processing
+from ..services.analysis import load_json, queue_analysis, session_events_frame
 from ..services.audit import audit
 from ..services.lifecycle import transition
 from ..settings import get_settings
@@ -112,12 +112,8 @@ def process_session(
     )
     if running:
         raise HTTPException(409, "This session is already being analysed.")
-    transition(db, s, "PROCESSING", actor, "analysis started")
-    job = ProcessingJob(id=new_id("job"), session_id=sid, status="QUEUED", stage="Queued", progress=0.0)
-    db.add(job)
-    db.commit()
-    start_processing(_factory(), storage, sid, job.id, actor)
-    return {"job_id": job.id, "status": "QUEUED"}
+    job_id = queue_analysis(_factory(), db, storage, s, actor)
+    return {"job_id": job_id, "status": "QUEUED"}
 
 
 @router.get("/sessions/{sid}/job")

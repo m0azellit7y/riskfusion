@@ -25,6 +25,7 @@ def api_env(tmp_path_factory: pytest.TempPathFactory) -> Iterator[dict[str, str]
     os.environ["RISKFUSION_DATABASE_URL"] = TEST_DB
     os.environ["RISKFUSION_STORAGE_ROOT"] = str(storage)
     os.environ["RISKFUSION_DATA_ROOT"] = str(data)
+    os.environ["RISKFUSION_AUTO_ANALYSE"] = "false"  # tests trigger analysis explicitly (one test turns it on)
     from sqlalchemy import create_engine, text
 
     try:

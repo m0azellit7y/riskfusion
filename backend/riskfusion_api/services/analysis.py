@@ -179,6 +179,18 @@ def process_mock_session(session_factory: Any, storage: Storage, session_id: str
         db.close()
 
 
+def queue_analysis(session_factory: Any, db: Session, storage: Storage, s: ExamSession, actor: str) -> str:
+    """Move a session to PROCESSING, record a job and start it in the background. Returns the job id."""
+    from ..deps import new_id
+
+    transition(db, s, "PROCESSING", actor, "analysis started")
+    job = ProcessingJob(id=new_id("job"), session_id=s.id, status="QUEUED", stage="Queued", progress=0.0)
+    db.add(job)
+    db.commit()
+    start_processing(session_factory, storage, s.id, job.id, actor)
+    return job.id
+
+
 def start_processing(session_factory: Any, storage: Storage, session_id: str, job_id: str, actor: str) -> None:
     threading.Thread(
         target=process_mock_session, args=(session_factory, storage, session_id, job_id, actor), daemon=True

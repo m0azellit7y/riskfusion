@@ -36,7 +36,7 @@ online-exam sessions for **human review**. It was built end to end.
 |---|---|
 | 0 | Pinned environment; event.v1 / risk_assessment.v1 contracts with a single registry; SRS audit (26 findings) |
 | 1 | Seeded simulator; consent and mock recording (webcam, telemetry, script cues); DR-4 label store; splits with a guarded sealed holdout |
-| 2 | Detectors on recordings: SCRFD face, ArcFace identity, head pose, YOLOX objects/persons, audio VAD + speaker heuristic; explicit UNKNOWN for liveness and pose (no licensed models); FR-6/FR-3 measurement code |
+| 2 | All 11 channels from one recording in one pass: SCRFD face, ArcFace identity, head pose, YOLOX objects/persons, MediaPipe face mesh (liveness from blinks), MediaPipe pose + palm (hands, reaching), audio VAD + speaker heuristic, DSP audio-event tagger, browser telemetry (screen, device, behavioural); analysis starts automatically on upload; FR-6/FR-3 measurement code |
 | 3 | 1-second grid with gaps, 30 s out-of-order window, 273 features (windows, baseline normalisation, interactions), ROCKET temporal features; Parquet feature store with schema hash |
 | 4 | Rule baseline, LightGBM with imbalance handling, temporal model, Platt calibration, capacity-based tiers, experiment log, holdout access 1 |
 | 5 | TreeSHAP per prediction, plain-language reasons, time-bounded flags (84% IoU ≥ 0.5), global importance and partial dependence, ablations |
@@ -123,7 +123,8 @@ the reviewer's verdict is stored separately so the overturn rate can be tracked.
 
 - Trained and evaluated only on simulated data whose detector error rates are estimates.
 - The consented mock corpus is not yet recorded, so FR-3 and FR-6 have not run on real volunteers.
-- Weak components: a heuristic speaker detector, no liveness model, a head-pose proxy for gaze.
+- Weaker components: heuristic speaker detection, blink-based liveness (a replayed video passes), a
+  signal-processing audio tagger, a head-pose proxy for gaze; body pose only when the elbows are in view.
 - No authentication (local research prototype); the Docker files have not been built in the development environment.
 
 ## 6. Reproduction
