@@ -1,0 +1,14 @@
+# FR-16 rule baseline. Hand-set weights on interpretable session features, chosen from domain reasoning
+# BEFORE looking at any model results. score = sigmoid(bias + sum(weight * feature)).
+version: rule-baseline-v1
+bias: -4.0
+weights:
+  phone__w10_max: 2.5          # phone visible in any 10 s window
+  multi_face__w10_max: 2.0     # second face in view
+  extra_person__w10_max: 1.0
+  id_mismatch__mean: 6.0       # share of time the face does not match enrolment
+  tab_hidden__mean: 8.0        # share of time the exam tab was hidden
+  foreign__w60_max: 2.0        # another voice
+  paper__w60_max: 1.5
+  gaze_off__mean: 3.0
+  x_paste_after_tab_return: 0.8
