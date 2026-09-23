@@ -165,6 +165,7 @@ class _Noise:
         self.cfg = cfg
         self.rng = rng
         self.mult: dict[str, list[float]] = {d: [1.0, 1.0] for d in cfg.detectors}
+        self.recall_scale: dict[str, float] = {}
         eff = cfg.nuisance_effects
         for factor in ("lighting", "webcam_class", "room_noise"):
             level = nuisance[factor]
@@ -181,7 +182,7 @@ class _Noise:
         cfg, rng = self.cfg, self.rng
         n = truth.shape[0]
         fp_mult, fn_mult = self.mult[detector]
-        p_miss = min(0.95, cfg.miss_prob(detector) * fn_mult)
+        p_miss = min(0.97, cfg.miss_prob(detector, self.recall_scale.get(detector, 1.0)) * fn_mult)
         burst = cfg.detectors[detector].burst_s
         onset_p = min(0.5, cfg.fp_rate(detector) * fp_mult * fp_scale / burst)
         miss = truth & (rng.random(n) < p_miss)
@@ -247,7 +248,44 @@ def simulate_session(cfg: SimulatorConfig, index: int, run_tag: str) -> Simulate
         else:
             ivs = _random_intervals(rng, T, n_ep, (ep.duration_s[0], ep.duration_s[1]), lo=30)
             episodes[vt] = _mask_to_intervals(_intervals_to_mask(T, ivs))
+    subtle = False
+    sc = cfg.subtle
+    if vtypes and sc.prob > 0 and rng.random() < sc.prob:
+        subtle = True
+        noise.recall_scale = dict(sc.recall_scale)
+        for vt in list(episodes):
+            if vt != "IMPERSONATION":
+                episodes[vt] = [(s0, s0 + max(3, int((e0 - s0) * sc.duration_scale))) for s0, e0 in episodes[vt]]
     gt = {vt: _intervals_to_mask(T, episodes.get(vt, [])) for vt in VIOLATION_TYPES}
+    cf = cfg.confounders
+    conf_phone = np.zeros(T, dtype=bool)
+    conf_talk = np.zeros(T, dtype=bool)
+    conf_writing = np.zeros(T, dtype=bool)
+    conf_tab = np.zeros(T, dtype=bool)
+    id_drift = np.zeros(T, dtype=bool)
+    if cf.phone_on_desk_prob > 0 and rng.random() < cf.phone_on_desk_prob:
+        share = rng.uniform(*cf.phone_on_desk_share)
+        conf_phone = _intervals_to_mask(
+            T, _random_intervals(rng, T, int(rng.integers(1, 4)), (share * T / 3, share * T))
+        )
+    if cf.background_talk_prob > 0 and rng.random() < cf.background_talk_prob:
+        share = rng.uniform(*cf.background_talk_share)
+        conf_talk = _intervals_to_mask(T, _random_intervals(rng, T, max(1, int(share * T / 20)), (5, 40)))
+    if cf.writing_prob > 0 and rng.random() < cf.writing_prob:
+        conf_writing = _intervals_to_mask(
+            T, _random_intervals(rng, T, int(rng.integers(*cf.writing_episodes)), cf.writing_duration_s, lo=30)
+        )
+    if cf.tab_notification_prob > 0 and rng.random() < cf.tab_notification_prob:
+        conf_tab = _intervals_to_mask(
+            T, _random_intervals(rng, T, int(rng.integers(*cf.tab_notification_count)), (2, 10))
+        )
+    if (
+        cf.identity_drift_prob > 0
+        and (nuisance["lighting"] == "dim" or nuisance["head_covering"])
+        and (rng.random() < cf.identity_drift_prob)
+    ):
+        share = rng.uniform(*cf.identity_drift_share)
+        id_drift = _intervals_to_mask(T, _random_intervals(rng, T, max(1, int(share * T / 30)), (10, 60)))
 
     # 3. per-second true states -----------------------------------------------------------------
     away = _intervals_to_mask(T, _random_intervals(rng, T, int(rng.integers(0, 3)), (4, 25)))
@@ -258,22 +296,27 @@ def simulate_session(cfg: SimulatorConfig, index: int, run_tag: str) -> Simulate
     if profile == "poor_environment":  # people passing, TV, household noise — not violations
         second_person |= _intervals_to_mask(T, _random_intervals(rng, T, int(rng.integers(1, 6)), (2, 10)))
         background_voice |= rng.random(T) < rng.uniform(0.03, 0.10)
+    background_voice |= conf_talk
     second_voice_true = (gt["SECOND_PERSON"] & (rng.random(T) < 0.5)) | (
         gt["REMOTE_ASSISTANCE"] & (rng.random(T) < 0.6)
     )
     phone_true = gt["PHONE_USE"] & present
+    phone_seen = phone_true | (conf_phone & present)  # a phone lying on the desk is visible but not used
     paper_allowed = rng.random() < 0.3  # permitted scratch paper on desk
-    paper_true = gt["NOTE_READING"] | (paper_allowed & (rng.random(T) < 0.05))
+    paper_true = gt["NOTE_READING"] | (paper_allowed & (rng.random(T) < 0.05)) | conf_writing
     glance_rate = {"clean": 0.01, "fidgety_clean": 0.04, "poor_environment": 0.025}.get(profile, 0.012)
     glances = _intervals_to_mask(T, _random_intervals(rng, T, int(glance_rate * T), (1, 4)))
     side = np.where(rng.random(T) < 0.5, -1.0, 1.0)
-    gaze_down = gt["NOTE_READING"] | gt["PHONE_USE"]
+    gaze_down = gt["NOTE_READING"] | gt["PHONE_USE"] | conf_writing
     gaze_side = gt["REMOTE_ASSISTANCE"] & (rng.random(T) < 0.7)
+    via_monitor = subtle and sc.tab_switch_via_second_monitor and "TAB_SWITCH" in vtypes
+    if via_monitor:  # reads from a second screen instead of switching tabs: no tab event, sideways glances
+        gaze_side = gaze_side | gt["TAB_SWITCH"]
     gaze_off_true = (gaze_down | gaze_side | glances) & present
-    tab_hidden_true = gt["TAB_SWITCH"].copy()
+    tab_hidden_true = (gt["TAB_SWITCH"] & (not via_monitor)) | conf_tab
     if rng.random() < 0.08:  # accidental brief switch in a clean session
         tab_hidden_true |= _intervals_to_mask(T, _random_intervals(rng, T, 1, (1, 3)))
-    multi_monitor_true = rng.random() < (0.4 if "TAB_SWITCH" in vtypes else 0.08)
+    multi_monitor_true = bool(via_monitor) or rng.random() < (0.4 if "TAB_SWITCH" in vtypes else 0.08)
     identity_mismatch_true = gt["IMPERSONATION"] & present
     spoof_true = identity_mismatch_true & (rng.random() < 0.25)
     reach_true = (
@@ -375,7 +418,7 @@ def simulate_session(cfg: SimulatorConfig, index: int, run_tag: str) -> Simulate
 
         # identity every 5 s
         chk = t % 5 == 0
-        mism_det = noise.detect(identity_mismatch_true[chk], "identity_mismatch")
+        mism_det = noise.detect(identity_mismatch_true[chk], "identity_mismatch") | id_drift[chk]
         sim_ok_mu = 0.70 - 0.08 * (nuisance["webcam_class"] == "low") - 0.06 * (nuisance["lighting"] == "dim")
         n_chk = int(chk.sum())
         sim = np.where(mism_det, rng.normal(0.22, 0.08, n_chk), rng.normal(sim_ok_mu, 0.06, n_chk))
@@ -416,7 +459,7 @@ def simulate_session(cfg: SimulatorConfig, index: int, run_tag: str) -> Simulate
         env_ok = vis_ok[chk]
         buf.add("PERSON_COUNT", ts[chk][env_ok] + 100, 0.9, {"n_persons": n_persons[env_ok]})
         unknown_seconds("environment", chk & ~vis_ok, vis_reason)
-        phone_det = noise.detect(phone_true, "phone") & vis_ok
+        phone_det = noise.detect(phone_seen, "phone") & vis_ok
         paper_det = noise.detect(paper_true, "book_paper") & vis_ok & ~phone_det
         for mask, lab in ((phone_det, "cell_phone"), (paper_det, "paper")):
             k = int(mask.sum())
@@ -547,6 +590,8 @@ def simulate_session(cfg: SimulatorConfig, index: int, run_tag: str) -> Simulate
         "labeler": f"simulator:{cfg.config_version}",
         "confidence": "certain",
     }
+    if cfg.subtle.prob > 0:
+        meta["subtle"] = subtle
     return SimulatedSession(meta=meta, label=label, events=events)
 
 
@@ -557,16 +602,23 @@ def sessions_to_event_frame(sessions: list[SimulatedSession], detector_version: 
     sess_codes = np.repeat(np.arange(len(sessions), dtype=np.int32), lens)
     cat = {k: np.concatenate([s.events[k] for s in sessions]) for k in sessions[0].events}
     et_codes = cat["et"].astype(np.int32)
-    ch_of_et = np.array([EVENT_TYPES[n].channel for n in ET_NAMES], dtype=object)
-    channels = pd.Categorical(ch_of_et[et_codes])
-    detectors = pd.Categorical(np.array([_DETECTOR_OF_CHANNEL[c] for c in ch_of_et], dtype=object)[et_codes])
+    ch_names = sorted({EVENT_TYPES[n].channel for n in ET_NAMES})
+    det_names = sorted(set(_DETECTOR_OF_CHANNEL.values()))
+    ch_code_of_et = np.array([ch_names.index(EVENT_TYPES[n].channel) for n in ET_NAMES], dtype=np.int32)
+    det_code_of_et = np.array(
+        [det_names.index(_DETECTOR_OF_CHANNEL[EVENT_TYPES[n].channel]) for n in ET_NAMES], dtype=np.int32
+    )
+    # build categoricals straight from integer codes (no per-row Python strings: ~1 GB saved per shard)
+    channels = pd.Categorical.from_codes(ch_code_of_et[et_codes], categories=ch_names)
+    detectors = pd.Categorical.from_codes(det_code_of_et[et_codes], categories=det_names)
+    versions = pd.Categorical.from_codes(np.zeros(len(et_codes), dtype=np.int8), categories=[detector_version])
     df = pd.DataFrame(
         {
             "session_id": pd.Categorical.from_codes(sess_codes, categories=sids),
             "ts_ms": cat["ts_ms"],
             "channel": channels,
             "detector": detectors,
-            "detector_version": pd.Categorical([detector_version] * len(et_codes)),
+            "detector_version": versions,
             "event_type": pd.Categorical.from_codes(et_codes, categories=list(ET_NAMES)),
             "confidence": cat["confidence"],
             "p0": cat["p0"],

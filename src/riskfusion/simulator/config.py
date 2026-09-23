@@ -121,6 +121,31 @@ class ConnectionCfg(_Strict):
     stable_gaps_per_hour: tuple[float, float]
 
 
+class ConfoundersCfg(_Strict):
+    """Persistent, realistic false-alarm sources in clean sessions (added in sim-v1.1; all off by default)."""
+
+    phone_on_desk_prob: float = 0.0
+    phone_on_desk_share: tuple[float, float] = (0.1, 0.5)
+    background_talk_prob: float = 0.0
+    background_talk_share: tuple[float, float] = (0.02, 0.15)
+    writing_prob: float = 0.0
+    writing_episodes: tuple[int, int] = (2, 8)
+    writing_duration_s: tuple[int, int] = (10, 60)
+    tab_notification_prob: float = 0.0
+    tab_notification_count: tuple[int, int] = (1, 3)
+    identity_drift_prob: float = 0.0
+    identity_drift_share: tuple[float, float] = (0.05, 0.2)
+
+
+class SubtleCfg(_Strict):
+    """Violations that are hard to observe (sim-v1.1): short episodes and evasive behaviour."""
+
+    prob: float = 0.0
+    duration_scale: float = 1.0
+    recall_scale: dict[str, float] = {}
+    tab_switch_via_second_monitor: bool = False
+
+
 class SimulatorConfig(_Strict):
     config_version: str
     seed: int
@@ -136,6 +161,8 @@ class SimulatorConfig(_Strict):
     nuisance_effects: dict[str, dict[str, dict[str, Effect]]]
     connection: ConnectionCfg
     channel_outage: dict[str, float]
+    confounders: ConfoundersCfg = ConfoundersCfg()
+    subtle: SubtleCfg = SubtleCfg()
 
     @model_validator(mode="after")
     def _complete(self) -> SimulatorConfig:
@@ -156,15 +183,21 @@ class SimulatorConfig(_Strict):
         d = self.detectors[detector]
         return self.pessimism * d.ref_prevalence * d.recall * (1 - d.precision) / d.precision
 
-    def miss_prob(self, detector: str) -> float:
-        return 1.0 - self.detectors[detector].recall * self.recall_pessimism
+    def miss_prob(self, detector: str, recall_scale: float = 1.0) -> float:
+        return 1.0 - self.detectors[detector].recall * self.recall_pessimism * recall_scale
 
     def expected_positive_rate(self) -> float:
         total = sum(p.weight for p in self.profiles.values())
         return sum(p.weight for p in self.profiles.values() if p.violation) / total
 
     def config_hash(self) -> str:
-        blob = json.dumps(self.model_dump(mode="json"), sort_keys=True).encode()
+        dump = self.model_dump(mode="json")
+        # keep v1 hashes stable: omit the v1.1 sections when they are at their (disabled) defaults
+        if self.confounders == ConfoundersCfg():
+            dump.pop("confounders")
+        if self.subtle == SubtleCfg():
+            dump.pop("subtle")
+        blob = json.dumps(dump, sort_keys=True).encode()
         return hashlib.sha256(blob).hexdigest()
 
 

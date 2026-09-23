@@ -438,8 +438,9 @@ def write_dead_letter(rejected: pd.DataFrame, path: Path) -> int:
         return 0
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
-        for rec in rejected.to_dict(orient="records"):
-            fh.write(json.dumps(rec, default=_json_default) + "\n")
+        for start in range(0, len(rejected), 50_000):  # chunked: a mass rejection must not exhaust memory
+            for rec in rejected.iloc[start : start + 50_000].to_dict(orient="records"):
+                fh.write(json.dumps(rec, default=_json_default) + "\n")
     return len(rejected)
 
 

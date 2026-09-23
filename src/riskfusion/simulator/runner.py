@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import json
 import platform
@@ -33,7 +34,8 @@ def run_id_for(cfg: SimulatorConfig) -> str:
 
 
 def _frame_digest(df: pd.DataFrame) -> str:
-    h = pd.util.hash_pandas_object(df.astype({c: "object" for c in df.select_dtypes("category").columns}), index=False)
+    # hashing a categorical equals hashing its values (pandas guarantee) — no per-row string objects needed
+    h = pd.util.hash_pandas_object(df, index=False)
     return hashlib.sha256(h.to_numpy().tobytes()).hexdigest()
 
 
@@ -48,7 +50,8 @@ def generate(cfg: SimulatorConfig, data_root: Path, overwrite: bool = False) -> 
     dead_path = data_root / "deadletter" / f"{run_id}.jsonl"
     if dead_path.exists():
         dead_path.unlink()
-    run_tag = f"{cfg.config_version.replace('-', '')}s{cfg.seed % 10000}"
+    # session ids must satisfy the contract pattern [A-Za-z0-9_-]: keep alphanumerics only ("sim-v1.1" -> "simv11")
+    run_tag = f"{''.join(ch for ch in cfg.config_version if ch.isalnum())}s{cfg.seed % 10000}"
 
     t0 = time.perf_counter()
     metas: list[dict[str, Any]] = []
@@ -62,13 +65,16 @@ def generate(cfg: SimulatorConfig, data_root: Path, overwrite: bool = False) -> 
         frame = sessions_to_event_frame(sessions, detector_version=cfg.config_version)
         valid, rejected = validate_event_frame(frame)
         n_dead += write_dead_letter(rejected, dead_path)
+        if rejected.empty:
+            valid = frame  # avoid holding a second full copy of the shard
         table = pa.Table.from_pandas(valid, preserve_index=False)
         pq.write_table(table, out / "events" / f"shard-{shard_no:04d}.parquet", compression="zstd")
         shard_digests.append(_frame_digest(valid))
         n_events += len(valid)
         metas.extend(s.meta for s in sessions)
         labels.extend(s.label for s in sessions)
-        del sessions, frame, valid, table
+        del sessions, frame, valid, table, rejected
+        gc.collect()
     elapsed = time.perf_counter() - t0
 
     meta_df = pd.DataFrame(metas)
