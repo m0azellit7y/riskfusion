@@ -1,0 +1,125 @@
+# RiskFusion session simulator — configuration v1
+#
+# Noise-model provenance: SRS DR-3 PLANNING ESTIMATES (not yet measured).
+# FR-6 requires replacing these with rates measured on the consented mock corpus; the measured
+# configuration will be written as a new file (v2-measured.yaml) and the change documented.
+#
+# Per-second false-positive rates are derived from DR-3 precision/recall with
+#   fp_rate = pessimism * ref_prevalence * recall * (1 - precision) / precision
+# i.e. the FP rate that produces the stated precision when the condition is truly present in
+# `ref_prevalence` of all seconds. Missed detections occur with probability (1 - recall) / pessimism_recall.
+
+config_version: sim-v1.1-noise150
+seed: 20260923
+n_sessions: 5000
+shard_size: 250
+
+noise_source: "DR-3 planning estimates (unmeasured) — to be replaced by FR-6 measurements"
+pessimism: 1.875         # FR-31: detector false-positive rates +50% over v1.1
+recall_pessimism: 0.97   # multiplies every recall (<1 = more misses)
+
+profiles:
+  # weight = share of the corpus; violation = session-level label
+  clean:            {weight: 0.55,  violation: false}
+  fidgety_clean:    {weight: 0.20,  violation: false}
+  poor_environment: {weight: 0.19,  violation: false}
+  phone_user:       {weight: 0.012, violation: true}
+  second_person:    {weight: 0.008, violation: true}
+  impersonation:    {weight: 0.006, violation: true}
+  tab_switcher:     {weight: 0.010, violation: true}
+  remote_assisted:  {weight: 0.008, violation: true}
+  note_reader:      {weight: 0.010, violation: true}
+  mixed:            {weight: 0.006, violation: true}
+
+episodes:
+  # per violation type: number of episodes [min, max] and duration seconds [min, max]
+  PHONE_USE:         {count: [1, 4], duration_s: [15, 120]}
+  SECOND_PERSON:     {count: [1, 3], duration_s: [20, 180]}
+  IMPERSONATION:     {count: [1, 1], duration_s: [-1, -1]}   # -1 = from swap point to end
+  TAB_SWITCH:        {count: [2, 8], duration_s: [5, 60]}
+  REMOTE_ASSISTANCE: {count: [1, 4], duration_s: [30, 240]}
+  NOTE_READING:      {count: [2, 6], duration_s: [20, 150]}
+
+nuisance:
+  # sampled independently of the profile (nuisance factors are unrelated to the label)
+  lighting:             {bright: 0.35, normal: 0.40, dim: 0.25}
+  webcam_class:         {hd: 0.40, sd: 0.40, low: 0.20}
+  room_noise:           {quiet: 0.50, moderate: 0.35, noisy: 0.15}
+  connection_stability: {stable: 0.80, unstable: 0.20}
+  eyewear_prob: 0.35
+  head_covering_prob: 0.12
+  duration_min: {min: 20, max: 90, mode: 45}
+  baseline_movement: {lognormal_mean: 0.0, lognormal_sigma: 0.35}   # multiplier on head-motion sd
+
+detectors:
+  # DR-3 rows plus assumptions (marked) for detectors DR-3 does not list.
+  face_present:      {precision: 0.99, recall: 0.98, ref_prevalence: 0.03, burst_s: 2}
+  face_count_gt1:    {precision: 0.95, recall: 0.90, ref_prevalence: 0.01, burst_s: 2}
+  identity_mismatch: {precision: 0.97, recall: 0.93, ref_prevalence: 0.01, burst_s: 1}
+  phone:             {precision: 0.75, recall: 0.70, ref_prevalence: 0.01, burst_s: 2}
+  gaze_off_screen:   {precision: 0.65, recall: 0.80, ref_prevalence: 0.06, burst_s: 3}
+  second_voice:      {precision: 0.92, recall: 0.88, ref_prevalence: 0.01, burst_s: 2}
+  tab_hidden:        {precision: 1.00, recall: 1.00, ref_prevalence: 0.01, burst_s: 1}
+  multi_monitor:     {precision: 1.00, recall: 0.95, ref_prevalence: 0.05, burst_s: 1}
+  # --- not in DR-3: assumed, flagged for FR-6 measurement ---
+  book_paper:        {precision: 0.70, recall: 0.65, ref_prevalence: 0.01, burst_s: 2, assumed: true}
+  person_count_gt1:  {precision: 0.93, recall: 0.88, ref_prevalence: 0.01, burst_s: 2, assumed: true}
+  liveness_spoof:    {precision: 0.90, recall: 0.85, ref_prevalence: 0.005, burst_s: 1, assumed: true}
+  reach_off_frame:   {precision: 0.70, recall: 0.75, ref_prevalence: 0.03, burst_s: 2, assumed: true}
+
+nuisance_effects:
+  # multipliers on FP rate ("fp") and on miss probability ("fn") per detector
+  lighting:
+    dim:    {face_present: {fn: 4.0}, gaze_off_screen: {fp: 1.8}, phone: {fn: 1.5, fp: 1.4},
+             identity_mismatch: {fp: 2.5}, book_paper: {fn: 1.4}, liveness_spoof: {fp: 2.0}}
+    bright: {gaze_off_screen: {fp: 0.9}}
+  webcam_class:
+    low:    {phone: {fn: 1.6, fp: 1.3}, identity_mismatch: {fp: 2.0}, gaze_off_screen: {fp: 1.5},
+             face_count_gt1: {fp: 1.5}, book_paper: {fn: 1.5}, liveness_spoof: {fp: 1.8}}
+    sd:     {phone: {fn: 1.2}, identity_mismatch: {fp: 1.3}, gaze_off_screen: {fp: 1.2}}
+  room_noise:
+    noisy:    {second_voice: {fp: 2.5, fn: 1.3}}
+    moderate: {second_voice: {fp: 1.4}}
+  eyewear:
+    present: {gaze_off_screen: {fp: 1.4}, identity_mismatch: {fp: 1.3}}
+  head_covering:
+    present: {identity_mismatch: {fp: 1.5}, face_count_gt1: {fp: 1.2}}
+
+connection:
+  # unstable connections produce explicit *_UNKNOWN gaps on audio/visual channels (FR-7)
+  unstable_gaps_per_hour: [3, 12]
+  gap_duration_s: [5, 90]
+  stable_gaps_per_hour: [0, 1]
+
+channel_outage:
+  # probability that a channel is entirely unavailable for a session (device failure, permission)
+  presence: 0.01
+  audio_voice: 0.03
+  device: 0.15   # multi-monitor not observable on some browsers
+  screen: 0.01
+
+# ---- added in sim-v1.1 --------------------------------------------------------------------------------
+# v1 produced a trivially separable task (validation PR-AUC 1.0): every violation was long and loud, and every
+# false alarm was a 2-3 second blip. v1.1 adds the hard cases real proctoring has (see docs/MODEL_REPORT.md).
+confounders:
+  phone_on_desk_prob: 0.12        # phone lying face-down on the desk for long stretches (visible, not used)
+  phone_on_desk_share: [0.1, 0.5]
+  background_talk_prob: 0.12      # TV / household conversation off camera
+  background_talk_share: [0.02, 0.15]
+  writing_prob: 0.35              # looks down to write on permitted scratch paper
+  writing_episodes: [2, 8]
+  writing_duration_s: [10, 60]
+  tab_notification_prob: 0.10     # OS notification or accidental click leaves the exam tab briefly
+  tab_notification_count: [1, 3]
+  identity_drift_prob: 0.35       # dim light / head covering: face match degrades for tens of seconds
+  identity_drift_share: [0.05, 0.2]
+subtle:
+  prob: 0.35                      # share of violating sessions that are evasive
+  duration_scale: 0.3             # episodes are ~70% shorter
+  recall_scale:                   # detectors see less of an evasive violation
+    phone: 0.35                   #   phone held below the camera
+    second_voice: 0.35            #   whispering / earpiece
+    face_count_gt1: 0.4           #   helper mostly out of frame
+    person_count_gt1: 0.4
+    book_paper: 0.4               #   notes below the desk edge
+  tab_switch_via_second_monitor: true
