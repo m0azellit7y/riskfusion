@@ -35,6 +35,10 @@ const ACTION_TEXT: Record<string, string> = {
 export default function OverviewPage() {
   const nav = useNavigate();
   const { data, error, loading, reload } = useAsync(() => api.get<Overview>("/overview"), []);
+  const model = useAsync(
+    () => api.get<{ model_version: string; headline_metrics_validation: { pr_auc: number; recall: number } }>("/model-info").catch(() => null),
+    [],
+  );
   if (loading && !data) return <Loading />;
   if (error || !data) return <ErrorNotice message={error ?? "No data"} onRetry={reload} />;
 
@@ -48,9 +52,10 @@ export default function OverviewPage() {
         title="Overview"
         description="Consented mock-session collection and the simulated datasets used to develop the risk models."
         actions={
-          <Link className="btn btn-primary" to="/sessions/new">
-            New session
-          </Link>
+          <>
+            <Link className="btn" to="/review">Review queue</Link>
+            <Link className="btn btn-primary" to="/sessions/new">New session</Link>
+          </>
         }
       />
       {data.mock_needs_upload > 0 && (
@@ -68,7 +73,9 @@ export default function OverviewPage() {
           { label: "Participants with consent", value: fmtInt(cov.active_participants), note: `${cov.participants_recorded} recorded` },
           { label: "Mock sessions, all states", value: fmtInt(Object.values(mock).reduce((a, b) => a + b, 0) - (mock.DELETED ?? 0)) },
           { label: "Simulated sessions", value: fmtInt(simulated), note: `${data.datasets.length} dataset version${data.datasets.length === 1 ? "" : "s"}` },
-          { label: "Risk model", value: "Not trained", note: "arrives in Phase 4" },
+          model.data
+            ? { label: "Risk model", value: model.data.model_version, note: `PR-AUC ${model.data.headline_metrics_validation.pr_auc.toFixed(2)}, recall ${fmtPct(model.data.headline_metrics_validation.recall, 0)}` }
+            : { label: "Risk model", value: "Not installed", note: "run make pipeline" },
         ]}
       />
       <div className="grid-2" style={{ marginTop: 20 }}>

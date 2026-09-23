@@ -66,7 +66,7 @@ Severity levels:
 
   *Resolution (proposed):*
   - `confidence_band` is a bootstrap interval over calibration-set resamples.
-  - The tiers split at three thresholds chosen on the calibration split: routine review at 1.5% FPR, human review at the FR-32 operating point (3% FPR at recall ≥ 0.80), and priority review at the 99th percentile of clean-session scores.
+  - The tiers split at three thresholds chosen on the calibration split: routine review at 10% of clean sessions, human review at the FR-32 operating point (3%), and priority review at 0.5%. Implemented in `modeling/train.py`.
 
 ## Gaps
 

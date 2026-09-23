@@ -301,3 +301,57 @@ class AuditLog(Base):
     entity_type: Mapped[str] = mapped_column(String(40))
     entity_id: Mapped[str | None] = mapped_column(String(80))
     details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+
+
+class Prediction(Base):
+    """A risk_assessment.v1 produced by a model version for a session."""
+
+    __tablename__ = "predictions"
+    __table_args__ = (
+        CheckConstraint(
+            "recommendation IN ('NO_ACTION','ROUTINE_REVIEW','HUMAN_REVIEW','PRIORITY_REVIEW')",
+            name="ck_predictions_recommendation",
+        ),
+        Index("ix_predictions_risk", "model_version", "risk"),
+    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id", ondelete="CASCADE"), primary_key=True)
+    model_version: Mapped[str] = mapped_column(String(60), primary_key=True)
+    risk: Mapped[float] = mapped_column(Float)
+    recommendation: Mapped[str] = mapped_column(String(20), index=True)
+    band_lo: Mapped[float] = mapped_column(Float)
+    band_hi: Mapped[float] = mapped_column(Float)
+    n_flags: Mapped[int] = mapped_column(Integer, default=0)
+    assessment: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReviewVerdict(Base):
+    """A human reviewer's conclusion. Kept apart from `labels` and never used for training (SRS_AUDIT A-1)."""
+
+    __tablename__ = "review_verdicts"
+    __table_args__ = (
+        CheckConstraint("verdict IN ('NO_CONCERN','CONCERN_CONFIRMED','INCONCLUSIVE')", name="ck_review_verdict"),
+    )
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id", ondelete="CASCADE"), index=True)
+    model_version: Mapped[str | None] = mapped_column(String(60))
+    recommendation: Mapped[str | None] = mapped_column(String(20))
+    risk: Mapped[float | None] = mapped_column(Float)
+    verdict: Mapped[str] = mapped_column(String(20))
+    note: Mapped[str | None] = mapped_column(Text)
+    reviewer: Mapped[str] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ProcessingJob(Base):
+    __tablename__ = "processing_jobs"
+    __table_args__ = (CheckConstraint("status IN ('QUEUED','RUNNING','SUCCEEDED','FAILED')", name="ck_jobs_status"),)
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(10))
+    stage: Mapped[str | None] = mapped_column(String(40))
+    progress: Mapped[float] = mapped_column(Float, default=0.0)
+    message: Mapped[str | None] = mapped_column(Text)
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

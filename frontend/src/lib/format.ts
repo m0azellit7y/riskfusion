@@ -93,3 +93,24 @@ export const LIGHTING = ["bright", "normal", "dim"] as const;
 export const WEBCAMS = ["hd", "sd", "low"] as const;
 export const NOISE = ["quiet", "moderate", "noisy"] as const;
 export const WEBCAM_LABEL: Record<string, string> = { hd: "HD (720p+)", sd: "Standard (480p)", low: "Low (<480p)" };
+
+export const REC_LABEL: Record<string, string> = {
+  NO_ACTION: "No action",
+  ROUTINE_REVIEW: "Routine review",
+  HUMAN_REVIEW: "Human review",
+  PRIORITY_REVIEW: "Priority review",
+};
+export function recTone(r: string | null | undefined): string {
+  return r === "PRIORITY_REVIEW" ? "bad" : r === "HUMAN_REVIEW" ? "warn" : r === "ROUTINE_REVIEW" ? "info" : "ok";
+}
+export const VERDICT_LABEL: Record<string, string> = {
+  NO_CONCERN: "No concern",
+  CONCERN_CONFIRMED: "Concern confirmed",
+  INCONCLUSIVE: "Inconclusive",
+};
+export function featureLabel(f: string): string {
+  const [base, agg] = f.replace(/^bn_/, "").split("__");
+  const nice = base.replace(/^x_/, "").replace(/_/g, " ");
+  const a = agg ? ` (${agg.replace(/_/g, " ").replace(/^w(\d+)/, "$1 s window,")})` : "";
+  return (f.startsWith("bn_") ? "vs own baseline: " : "") + nice + a;
+}

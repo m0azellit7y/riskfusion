@@ -21,6 +21,7 @@ from ..models import (
     ExamSession,
     Label,
     Participant,
+    Prediction,
     Recording,
     ScriptEpisode,
     SessionStatusChange,
@@ -79,11 +80,24 @@ def _sealed(s: ExamSession, split: str | None) -> bool:
     return s.source == "SIMULATED" and split == "holdout"
 
 
-def _session_out(s: ExamSession, code: str | None, violation: bool | None, split: str | None) -> SessionOut:
+def _session_out(
+    s: ExamSession,
+    code: str | None,
+    violation: bool | None,
+    split: str | None,
+    risk: float | None = None,
+    rec: str | None = None,
+) -> SessionOut:
     if _sealed(s, split):
-        violation = None
+        violation, risk, rec = None, None, None
     return SessionOut.model_validate(s).model_copy(
-        update={"participant_code": code, "violation_label": violation, "split": split}
+        update={
+            "participant_code": code,
+            "violation_label": violation,
+            "split": split,
+            "risk": risk,
+            "recommendation": rec,
+        }
     )
 
 
@@ -102,15 +116,19 @@ def list_sessions(
     webcam_class: str | None = None,
     violation: bool | None = None,
     q: str | None = Query(default=None, max_length=64),
+    recommendation: str | None = None,
     include_deleted: bool = False,
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> Page:
     stmt = (
-        select(ExamSession, Participant.code, Label.violation, DataSplit.split)
+        select(
+            ExamSession, Participant.code, Label.violation, DataSplit.split, Prediction.risk, Prediction.recommendation
+        )
         .outerjoin(Participant, Participant.id == ExamSession.participant_id)
         .outerjoin(Label, Label.session_id == ExamSession.id)
         .outerjoin(DataSplit, DataSplit.session_id == ExamSession.id)
+        .outerjoin(Prediction, Prediction.session_id == ExamSession.id)
     )
     conds = []
     if source:
@@ -128,6 +146,9 @@ def list_sessions(
     if violation is not None:
         conds.append(Label.violation.is_(violation))
         conds.append(or_(DataSplit.split.is_(None), DataSplit.split != "holdout"))
+    if recommendation:
+        conds.append(Prediction.recommendation == recommendation)
+        conds.append(or_(DataSplit.split.is_(None), DataSplit.split != "holdout"))
     if q:
         like = f"%{q.strip()}%"
         conds.append(or_(ExamSession.id.ilike(like), Participant.code.ilike(like)))
@@ -135,7 +156,7 @@ def list_sessions(
         stmt = stmt.where(c)
     total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = db.execute(stmt.order_by(ExamSession.created_at.desc(), ExamSession.id).limit(limit).offset(offset)).all()
-    return Page(total=int(total), items=[_session_out(s, code, v, sp) for s, code, v, sp in rows])
+    return Page(total=int(total), items=[_session_out(s, code, v, sp, r, rec) for s, code, v, sp, r, rec in rows])
 
 
 @router.post("/sessions", response_model=SessionDetail, status_code=201)

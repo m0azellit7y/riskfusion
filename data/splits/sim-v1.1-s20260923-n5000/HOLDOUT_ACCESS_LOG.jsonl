@@ -1,1 +1,2 @@
 {"access_no": 1, "purpose": "Phase 4 exit: headline PR-AUC and recall at the operating point for rule baseline and fusion-v1.0.0", "operator": "root", "accessed_at": "2026-09-23T12:06:39.628747+00:00", "git_head": "7f4ab35920f8fce90c68c2acbfc381d9a0d466cf"}
+{"access_no": 2, "purpose": "Phase 7 final evaluation: discrimination, calibration, slices and missing-channel behaviour of fusion-v1.0.0", "operator": "root", "accessed_at": "2026-09-23T12:43:01.369966+00:00", "git_head": "7f4ab35920f8fce90c68c2acbfc381d9a0d466cf"}

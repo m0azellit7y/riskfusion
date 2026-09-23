@@ -33,13 +33,13 @@ holds everything with a lifecycle.
 | Phase | Scope | Exit criteria | State |
 |---|---|---|---|
 | 0 | Repo, pinned environment, contracts, validators, audit, ethics submission | Schemas + validators; audit written | **Done** (ethics submission: yours) |
-| 1 | Simulator, consent + mock recording, label store, splits, sealed holdout, dashboard for all of it | 5,000 sessions < 10 min; label store queryable; holdout committed; recording works end to end | **Done in software**; 60 mock recordings need volunteers |
-| 2 | Detectors on mock recordings (face, identity, liveness, head pose, objects, VAD/speaker), FR-5 extraction, FR-6 error measurement, FR-3 validation | Measured error report; simulator v2 with measured rates | Next |
-| 3 | 1 s grid, out-of-order handling, base + windowed + interaction features, baseline normalisation, feature store | Feature store versioned; < 5 s per 90-min session | |
-| 4 | Rule baseline, GBT model, imbalance handling, calibration, operating point, experiment tracking, holdout access 1 | +15% PR-AUC over baseline on validation; ECE < 0.05 | |
-| 5 | Temporal model, SHAP, explanations, flags, global interpretation, ablations | Flags IoU target; explanation readability | |
-| 6 | Sliced metrics, FPR disparity, mitigation, missing-channel and noise robustness, cost analysis, reviewer verdicts | Fairness report | |
-| 7 | /score, /model-info, batch CLI, HTML reviewer report, drift monitor, model card, one-command reproduction, holdout access 2, final report | All D1–D16 | |
+| 1 | Simulator, consent + mock recording, label store, splits, sealed holdout, dashboard for all of it | 5,000 sessions < 10 min; label store queryable; holdout committed; recording works end to end | **Done** (60 mock recordings need volunteers) |
+| 2 | Detectors on mock recordings (face, identity, liveness, head pose, objects, VAD/speaker), FR-5 extraction, FR-6 error measurement, FR-3 validation | Measured error report; simulator v2 with measured rates | **Done** (code; runs on your corpus) |
+| 3 | 1 s grid, out-of-order handling, base + windowed + interaction features, baseline normalisation, feature store | Feature store versioned; < 5 s per 90-min session | **Done** (0.035 s/session) |
+| 4 | Rule baseline, GBT model, imbalance handling, calibration, operating point, experiment tracking, holdout access 1 | +15% PR-AUC over baseline on validation; ECE < 0.05 | **Done** (+151%, ECE 0.016) |
+| 5 | Temporal model, SHAP, explanations, flags, global interpretation, ablations | Flags IoU target; explanation readability | **Done** (84%) |
+| 6 | Sliced metrics, FPR disparity, mitigation, missing-channel and noise robustness, cost analysis, reviewer verdicts | Fairness report | **Done** (disparity target not met — reported) |
+| 7 | /score, /model-info, batch CLI, HTML reviewer report, drift monitor, model card, one-command reproduction, holdout access 2, final report | All D1–D16 | **Done** (D3, D16 need you) |
 
 ## How each later phase appears in the product
 

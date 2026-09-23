@@ -1,6 +1,6 @@
-# Data dictionary (Phase 1)
+# Data dictionary
 
-Features are added in Phase 3. The authoritative definitions are the contract registry
+The authoritative definitions are the contract registry
 (`src/riskfusion/contracts.py`) and the ORM models (`backend/riskfusion_api/models.py`). This file
 explains them.
 
@@ -81,3 +81,36 @@ Columns: `session_id, ts_ms, channel, detector, detector_version, event_type, co
 `CREATED → CONSENTED → RECORDING → RECORDED → UPLOADED → PROCESSING → ANALYZING → COMPLETED → REVIEWED`, plus `FAILED`
 (retry returns to CONSENTED), `DELETED` (terminal, data purged) and `GENERATED` (simulated). Allowed transitions:
 `backend/riskfusion_api/services/lifecycle.py`.
+
+## Features (features-v1.0.0, `src/riskfusion/features/engine.py`)
+
+**Per-second signals (24).**
+- no_face, multi_face, face_area, face_offset
+- id_mismatch, id_sim_low, pad_fail
+- yaw_abs, pitch_down, gaze_off
+- extra_person, phone, paper, reach, hands_low
+- vad, foreign, phone_ring, paper_rustle
+- tab_hidden, fs_off, paste_chars, multi_monitor, keys_per_s
+
+NaN means the channel gave no usable observation. Slow detectors are carried forward for one cadence period only.
+
+| Family | Name pattern | Meaning |
+|---|---|---|
+| Whole session | `<signal>__mean/max/std/longest_run_s` | Summary over the session; longest run above the signal threshold |
+| Windowed | `<signal>__w{10,60,300}_max`, `_over` | Max of the rolling mean; share of time the rolling mean exceeds its threshold |
+| Baseline-normalised | `bn_<signal>__w60_max`, `__frac_over3` | Robust z against the candidate's first 60 usable seconds (continuous signals only) |
+| Interactions | `x_*` | Co-occurrence across channels (e.g. looking away while another voice speaks) |
+| Availability | `unk_<channel>` | Share of the session the channel was unavailable; monotone non-increasing in the model |
+| Context | `duration_min`, `baseline_available` | |
+
+**Model-only files.**
+- `temporal.parquet`: 800 ROCKET features over 10-second bins.
+- `flags.parquet`: time-bounded flags.
+
+## Analysis tables (migration 0002)
+
+| Table | Purpose |
+|---|---|
+| predictions | risk_assessment.v1 per session and model version (risk, tier, band, flags) |
+| review_verdicts | reviewer decisions (NO_CONCERN / INCONCLUSIVE / CONCERN_CONFIRMED); never training labels |
+| processing_jobs | background analysis of mock recordings (stage, progress, errors) |

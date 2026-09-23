@@ -55,7 +55,7 @@ def health(db: Session = Depends(get_db), storage: Storage = Depends(get_storage
         "version": riskfusion.__version__,
         "contracts": [EVENT_SCHEMA, RISK_SCHEMA],
         "checks": checks,
-        "model": None,  # no trained model yet: models arrive in Phase 4
+        "model": _model_ok() and __import__("riskfusion.serving", fromlist=["x"]).load_model().meta["model_version"],
         "time": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -159,7 +159,7 @@ def overview(db: Session = Depends(get_db)) -> dict[str, Any]:
             {"id": d.id, "n_sessions": d.n_sessions, "positive_rate": d.positive_rate, "noise_source": d.noise_source}
             for d in datasets
         ],
-        "model": None,
+        "model": _model_ok(),
     }
 
 
@@ -266,13 +266,29 @@ def system_status(db: Session = Depends(get_db), storage: Storage = Depends(get_
             {"stage": "Session simulator", "state": "available"},
             {"stage": "Consent and mock recording", "state": "available"},
             {"stage": "Browser telemetry capture", "state": "available"},
-            {"stage": "Signal extraction (detectors)", "state": "not_built"},
-            {"stage": "Feature engineering", "state": "not_built"},
-            {"stage": "Risk models and calibration", "state": "not_built"},
-            {"stage": "Explanations and flags", "state": "not_built"},
-            {"stage": "Reports and drift monitoring", "state": "not_built"},
+            {"stage": "Signal extraction (detectors)", "state": _stage(_detectors_ok())},
+            {"stage": "Feature engineering", "state": "available"},
+            {"stage": "Risk models and calibration", "state": _stage(_model_ok())},
+            {"stage": "Explanations and flags", "state": _stage(_model_ok())},
+            {"stage": "Reports and drift monitoring", "state": _stage(_model_ok())},
         ],
     }
+
+
+def _model_ok() -> bool:
+    from riskfusion.serving import DEFAULT_MODEL
+
+    return (DEFAULT_MODEL / "bundle.json").exists()
+
+
+def _detectors_ok() -> bool:
+    from riskfusion.extract.models import MODEL_DIR, MODELS
+
+    return all((MODEL_DIR / n).exists() for n in MODELS)
+
+
+def _stage(ok: bool) -> str:
+    return "available" if ok else "not_installed"
 
 
 @router.get("/audit")

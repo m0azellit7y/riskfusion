@@ -317,5 +317,5 @@ def test_simulated_dataset_registration_and_read_only(client, api_env) -> None: 
     bd = client.get(f"/datasets/{res.run_id}/breakdown").json()
     assert sum(r["sessions"] for r in bd["lighting"]) == 40
     status = client.get("/system/status").json()
-    assert status["schema_revision"] == "0001"
-    assert any(s["state"] == "not_built" for s in status["pipeline"])
+    assert status["schema_revision"] == "0002"
+    assert all(s["state"] == "available" for s in status["pipeline"])

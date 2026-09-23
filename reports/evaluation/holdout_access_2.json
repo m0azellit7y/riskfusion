@@ -1,0 +1,509 @@
+{
+  "access": 2,
+  "purpose": "Phase 7 final evaluation: discrimination, calibration, slices and missing-channel behaviour of fusion-v1.0.0",
+  "n": 750,
+  "positives": 49,
+  "primary": {
+    "n": 750,
+    "positives": 49,
+    "pr_auc": 0.834730507986669,
+    "roc_auc": 0.9513522955544558,
+    "ece": 0.01616424313849291,
+    "brier": 0.02110407663008727,
+    "tp": 41,
+    "fp": 37,
+    "fn": 8,
+    "tn": 664,
+    "recall": 0.8367346938775511,
+    "fpr": 0.052781740370898715,
+    "precision": 0.5256410256410257,
+    "flag_rate": 0.104,
+    "pr_auc_ci": [
+      0.7329622446076072,
+      0.9164886558046568
+    ]
+  },
+  "baseline": {
+    "n": 750,
+    "positives": 49,
+    "pr_auc": 0.34338773978460313,
+    "roc_auc": 0.6511106582433258,
+    "ece": 0.23183319615761916,
+    "brier": 0.14596685406536639,
+    "tp": 15,
+    "fp": 16,
+    "fn": 34,
+    "tn": 685,
+    "recall": 0.30612244897959184,
+    "fpr": 0.02282453637660485,
+    "precision": 0.4838709677419355,
+    "flag_rate": 0.04133333333333333
+  },
+  "reliability": [
+    {
+      "bin_lo": 0.0,
+      "bin_hi": 0.06666666666666667,
+      "n": 655,
+      "mean_pred": 0.006128447267794987,
+      "frac_pos": 0.012213740458015267
+    },
+    {
+      "bin_lo": 0.06666666666666667,
+      "bin_hi": 0.13333333333333333,
+      "n": 25,
+      "mean_pred": 0.09738846493152938,
+      "frac_pos": 0.04
+    },
+    {
+      "bin_lo": 0.13333333333333333,
+      "bin_hi": 0.2,
+      "n": 12,
+      "mean_pred": 0.157729580871224,
+      "frac_pos": 0.08333333333333333
+    },
+    {
+      "bin_lo": 0.2,
+      "bin_hi": 0.26666666666666666,
+      "n": 7,
+      "mean_pred": 0.22878486238668636,
+      "frac_pos": 0.14285714285714285
+    },
+    {
+      "bin_lo": 0.26666666666666666,
+      "bin_hi": 0.3333333333333333,
+      "n": 4,
+      "mean_pred": 0.3097872260252019,
+      "frac_pos": 0.0
+    },
+    {
+      "bin_lo": 0.3333333333333333,
+      "bin_hi": 0.4,
+      "n": 2,
+      "mean_pred": 0.38248162196695956,
+      "frac_pos": 0.0
+    },
+    {
+      "bin_lo": 0.4,
+      "bin_hi": 0.4666666666666667,
+      "n": 1,
+      "mean_pred": 0.4039539463450104,
+      "frac_pos": 1.0
+    },
+    {
+      "bin_lo": 0.4666666666666667,
+      "bin_hi": 0.5333333333333333,
+      "n": 8,
+      "mean_pred": 0.5043657953234085,
+      "frac_pos": 0.5
+    },
+    {
+      "bin_lo": 0.5333333333333333,
+      "bin_hi": 0.6,
+      "n": 1,
+      "mean_pred": 0.5364035832030566,
+      "frac_pos": 0.0
+    },
+    {
+      "bin_lo": 0.6,
+      "bin_hi": 0.6666666666666666,
+      "n": 1,
+      "mean_pred": 0.6414245140923761,
+      "frac_pos": 1.0
+    },
+    {
+      "bin_lo": 0.7333333333333333,
+      "bin_hi": 0.8,
+      "n": 1,
+      "mean_pred": 0.7546948420734209,
+      "frac_pos": 1.0
+    },
+    {
+      "bin_lo": 0.8,
+      "bin_hi": 0.8666666666666667,
+      "n": 1,
+      "mean_pred": 0.8282735488368018,
+      "frac_pos": 0.0
+    },
+    {
+      "bin_lo": 0.8666666666666667,
+      "bin_hi": 0.9333333333333333,
+      "n": 1,
+      "mean_pred": 0.9209850955387524,
+      "frac_pos": 1.0
+    },
+    {
+      "bin_lo": 0.9333333333333333,
+      "bin_hi": 1.0,
+      "n": 31,
+      "mean_pred": 0.98469991739398,
+      "frac_pos": 0.967741935483871
+    }
+  ],
+  "slices": {
+    "lighting": {
+      "levels": [
+        {
+          "level": "bright",
+          "n": 256,
+          "positives": 18,
+          "underpowered": true,
+          "fpr": 0.06302521008403361,
+          "fpr_ci": [
+            0.033606977031583773,
+            0.09422893510876343
+          ],
+          "recall": 0.8888888888888888,
+          "pr_auc": 0.9052862528326082,
+          "ece": 0.013363583470228299
+        },
+        {
+          "level": "dim",
+          "n": 177,
+          "positives": 11,
+          "underpowered": true,
+          "fpr": 0.04216867469879518,
+          "fpr_ci": [
+            0.012048192771084338,
+            0.07670814479638008
+          ],
+          "recall": 0.7272727272727273,
+          "pr_auc": 0.7688555311931936,
+          "ece": 0.02903706842039583
+        },
+        {
+          "level": "normal",
+          "n": 317,
+          "positives": 20,
+          "underpowered": false,
+          "fpr": 0.050505050505050504,
+          "fpr_ci": [
+            0.026845637583892617,
+            0.08014046822742474
+          ],
+          "recall": 0.85,
+          "pr_auc": 0.8187919546150526,
+          "ece": 0.022125455428178273
+        }
+      ],
+      "fpr_disparity": 1.4000000000000001,
+      "fpr_disparity_ci": [
+        1.0894945355191257,
+        3.458168191056909
+      ]
+    },
+    "webcam_class": {
+      "levels": [
+        {
+          "level": "hd",
+          "n": 313,
+          "positives": 20,
+          "underpowered": false,
+          "fpr": 0.05802047781569966,
+          "fpr_ci": [
+            0.03235431235431236,
+            0.08658996539792387
+          ],
+          "recall": 0.95,
+          "pr_auc": 0.8765525732437497,
+          "ece": 0.015333716543204324
+        },
+        {
+          "level": "low",
+          "n": 156,
+          "positives": 14,
+          "underpowered": true,
+          "fpr": 0.04929577464788732,
+          "fpr_ci": [
+            0.014232522796352584,
+            0.08681256337212108
+          ],
+          "recall": 0.8571428571428571,
+          "pr_auc": 0.8825005241671907,
+          "ece": 0.028711206932507307
+        },
+        {
+          "level": "sd",
+          "n": 281,
+          "positives": 15,
+          "underpowered": true,
+          "fpr": 0.04887218045112782,
+          "fpr_ci": [
+            0.025875700423670902,
+            0.07477360389065905
+          ],
+          "recall": 0.6666666666666666,
+          "pr_auc": 0.7227408105555769,
+          "ece": 0.02407632115254777
+        }
+      ],
+      "fpr_disparity": 1.168038740920097,
+      "fpr_disparity_ci": [
+        1.110361257905224,
+        2.725942302596714
+      ]
+    },
+    "room_noise": {
+      "levels": [
+        {
+          "level": "moderate",
+          "n": 290,
+          "positives": 19,
+          "underpowered": true,
+          "fpr": 0.03690036900369004,
+          "fpr_ci": [
+            0.014922796318727984,
+            0.06251233391454793
+          ],
+          "recall": 0.8421052631578947,
+          "pr_auc": 0.8795992820027363,
+          "ece": 0.017016067065813694
+        },
+        {
+          "level": "noisy",
+          "n": 106,
+          "positives": 13,
+          "underpowered": true,
+          "fpr": 0.06451612903225806,
+          "fpr_ci": [
+            0.02127659574468085,
+            0.11835684551341345
+          ],
+          "recall": 0.8461538461538461,
+          "pr_auc": 0.8541666666666665,
+          "ece": 0.031109635089568138
+        },
+        {
+          "level": "quiet",
+          "n": 354,
+          "positives": 17,
+          "underpowered": false,
+          "fpr": 0.06231454005934718,
+          "fpr_ci": [
+            0.03816058488612837,
+            0.0902477522296796
+          ],
+          "recall": 0.8235294117647058,
+          "pr_auc": 0.8091965003484429,
+          "ece": 0.022750501771157047
+        }
+      ],
+      "fpr_disparity": 1.8287081339712916,
+      "fpr_disparity_ci": [
+        1.1877659574468085,
+        4.347919466845876
+      ]
+    },
+    "connection_stability": {
+      "levels": [
+        {
+          "level": "stable",
+          "n": 584,
+          "positives": 36,
+          "underpowered": false,
+          "fpr": 0.04744525547445255,
+          "fpr_ci": [
+            0.03176195961422942,
+            0.06445672191528545
+          ],
+          "recall": 0.8333333333333334,
+          "pr_auc": 0.8290683313655913,
+          "ece": 0.013130551866872384
+        },
+        {
+          "level": "unstable",
+          "n": 166,
+          "positives": 13,
+          "underpowered": true,
+          "fpr": 0.0718954248366013,
+          "fpr_ci": [
+            0.03896103896103896,
+            0.10828025477707007
+          ],
+          "recall": 0.8461538461538461,
+          "pr_auc": 0.8651587995337993,
+          "ece": 0.03399258191125677
+        }
+      ],
+      "fpr_disparity": 1.5770609318996418,
+      "fpr_disparity_ci": [
+        1.0199033169631158,
+        2.715686274509804
+      ]
+    },
+    "eyewear": {
+      "levels": [
+        {
+          "level": "False",
+          "n": 475,
+          "positives": 30,
+          "underpowered": false,
+          "fpr": 0.056179775280898875,
+          "fpr_ci": [
+            0.037039052674643545,
+            0.07843600004257086
+          ],
+          "recall": 0.8,
+          "pr_auc": 0.8118802809350155,
+          "ece": 0.02469082675331447
+        },
+        {
+          "level": "True",
+          "n": 275,
+          "positives": 19,
+          "underpowered": true,
+          "fpr": 0.046875,
+          "fpr_ci": [
+            0.023030503978779843,
+            0.07421875
+          ],
+          "recall": 0.8947368421052632,
+          "pr_auc": 0.8602823588205895,
+          "ece": 0.010238925801615026
+        }
+      ],
+      "fpr_disparity": 1.1543624161073824,
+      "fpr_disparity_ci": [
+        1.0100591165487165,
+        2.313260393873085
+      ]
+    },
+    "head_covering": {
+      "levels": [
+        {
+          "level": "False",
+          "n": 659,
+          "positives": 46,
+          "underpowered": false,
+          "fpr": 0.04730831973898858,
+          "fpr_ci": [
+            0.032439906123050366,
+            0.06574391660139897
+          ],
+          "recall": 0.8260869565217391,
+          "pr_auc": 0.8324401480146207,
+          "ece": 0.01623948938869628
+        },
+        {
+          "level": "True",
+          "n": 91,
+          "positives": 3,
+          "underpowered": true,
+          "fpr": 0.09090909090909091,
+          "fpr_ci": [
+            0.03488372093023256,
+            0.15730337078651685
+          ],
+          "recall": 1.0,
+          "pr_auc": 1.0,
+          "ece": 0.025283444463712997
+        }
+      ],
+      "fpr_disparity": 2.05,
+      "fpr_disparity_ci": [
+        1.0866812369005785,
+        3.739255372313842
+      ]
+    }
+  },
+  "missing_channel": [
+    {
+      "channel": "presence",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.030650023115270045,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.6122448979591837
+    },
+    {
+      "channel": "identity",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.015624907330507469,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.6938775510204082
+    },
+    {
+      "channel": "liveness",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.0014657241386512147,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.8367346938775511
+    },
+    {
+      "channel": "attention",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.049632311921494913,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.6122448979591837
+    },
+    {
+      "channel": "environment",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.03131484726400221,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.6326530612244898
+    },
+    {
+      "channel": "pose",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.01902333606758514,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.7346938775510204
+    },
+    {
+      "channel": "audio_voice",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.010680991932492416,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.7755102040816326
+    },
+    {
+      "channel": "audio_event",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.002052709454597666,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.8163265306122449
+    },
+    {
+      "channel": "screen",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.01249185570026719,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.6938775510204082
+    },
+    {
+      "channel": "device",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.002502176284966285,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.8367346938775511
+    },
+    {
+      "channel": "behavioral",
+      "sessions": 750,
+      "share_increased": 0.0,
+      "max_increase": 0.0,
+      "mean_change": -0.03450035339246614,
+      "recall_full": 0.8367346938775511,
+      "recall_missing": 0.5714285714285714
+    }
+  ]
+}

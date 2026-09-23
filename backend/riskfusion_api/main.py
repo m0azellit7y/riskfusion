@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 import riskfusion
 
-from .routers import participants, sessions, system
+from .routers import analysis, participants, sessions, system
 from .services.lifecycle import InvalidTransition
 from .settings import get_settings
 
@@ -63,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(system.router)
     app.include_router(participants.router)
     app.include_router(sessions.router)
+    app.include_router(analysis.router)
     return app
 
 

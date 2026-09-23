@@ -1,0 +1,85 @@
+{
+  "detector_errors": {
+    "n_sessions": 1,
+    "detectors": {
+      "phone": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 0,
+        "neg": 40,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.0,
+        "precision_at_observed_prevalence": null
+      },
+      "face_count_gt1": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 10,
+        "neg": 40,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.25,
+        "precision_at_observed_prevalence": 0.0
+      },
+      "person_count_gt1": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 10,
+        "neg": 40,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.25,
+        "precision_at_observed_prevalence": 0.0
+      },
+      "identity_mismatch": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 0,
+        "neg": 40,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.0,
+        "precision_at_observed_prevalence": null
+      },
+      "tab_hidden": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 0,
+        "neg": 60,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.0,
+        "precision_at_observed_prevalence": null
+      },
+      "second_voice": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 0,
+        "neg": 59,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.0,
+        "precision_at_observed_prevalence": null
+      },
+      "book_paper": {
+        "tp": 0,
+        "fn": 0,
+        "fp": 0,
+        "neg": 40,
+        "sessions_with_truth": 0,
+        "recall": null,
+        "fp_rate_per_second": 0.0,
+        "precision_at_observed_prevalence": null
+      }
+    },
+    "assumption": "(SRS_AUDIT A-19): scripts give interval truth only. Inside a scripted interval of type T\nthe corresponding condition is present; outside every scripted interval the candidate is assumed alone, without\na phone or notes, on the exam tab. This biases false-positive estimates upwards (the safe direction)."
+  },
+  "measured_config": {
+    "written": false,
+    "reason": "only 1 sessions; need 20"
+  },
+  "simulator_vs_mock": {
+    "skipped": "simulated feature store sim-v1.1-s20260923-n5000 not found"
+  }
+}

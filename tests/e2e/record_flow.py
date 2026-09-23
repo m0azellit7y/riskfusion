@@ -118,6 +118,36 @@ def main() -> None:
         video = page.request.get(f"{BASE}/api/recordings/{rec['id']}/content")
         assert video.status == 200 and video.body()[:4] == b"\x1a\x45\xdf\xa3"
 
+        # Phase 2-5 from the UI: analyse the uploaded recording, then record a reviewer decision
+        page.goto(BASE + f"/sessions/{sid}")
+        page.get_by_role("button", name="Analyse recording").click()
+        expect(page.get_by_text("Reviewer decision")).to_be_visible(timeout=120000)
+        page.get_by_role("button", name="No concern").click()
+        page.get_by_role("button", name="Save decision").click()
+        expect(page.get_by_text("Review saved.")).to_be_visible()
+        page.wait_for_timeout(800)
+        shot(page, "08b-session-analysed")
+        analysed = page.request.get(f"{BASE}/api/sessions/{sid}").json()
+        assert analysed["status"] == "REVIEWED", analysed["status"]
+        assert analysed["event_counts"].get("presence", 0) > 0  # detector events from the real video
+
+        page.goto(BASE + "/review")
+        expect(page.get_by_role("heading", name="Review queue")).to_be_visible()
+        page.wait_for_timeout(800)
+        shot(page, "14-review-queue")
+        page.locator("tbody tr").first.click()
+        expect(page.get_by_text("Reviewer decision")).to_be_visible(timeout=20000)
+        page.wait_for_timeout(800)
+        shot(page, "15-flagged-session")
+        page.goto(BASE + "/model")
+        expect(page.get_by_text("What drives the score")).to_be_visible(timeout=20000)
+        page.wait_for_timeout(800)
+        shot(page, "16-model")
+        page.goto(BASE + "/fairness")
+        expect(page.get_by_text("Drift monitor")).to_be_visible(timeout=20000)
+        page.wait_for_timeout(800)
+        shot(page, "17-fairness")
+
         # remaining screens
         page.goto(BASE + "/")
         page.wait_for_timeout(800)

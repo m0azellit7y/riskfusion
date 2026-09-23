@@ -209,6 +209,8 @@ class SessionOut(ORM):
     ended_at: datetime | None
     violation_label: bool | None = None
     split: str | None = None
+    risk: float | None = None
+    recommendation: str | None = None
 
 
 class SessionDetail(SessionOut):

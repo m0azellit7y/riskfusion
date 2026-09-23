@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Badge, Empty, ErrorNotice, Loading, PageHeader, Panel, StatusBadge, useAsync } from "../components/ui";
 import { api, type Page, type Session } from "../lib/api";
-import { fmtDateTime, fmtDuration, LIGHTING, STATUS_LABEL, titleCase, WEBCAMS, WEBCAM_LABEL } from "../lib/format";
+import { fmtDateTime, fmtDuration, LIGHTING, REC_LABEL, recTone, STATUS_LABEL, titleCase, WEBCAMS, WEBCAM_LABEL } from "../lib/format";
 
 const PAGE = 50;
 
@@ -58,7 +58,7 @@ export default function SessionsPage() {
           {source === "MOCK" && (
             <select className="select" value={status} onChange={(e) => set("status", e.target.value)} aria-label="Status">
               <option value="">Any status</option>
-              {(["CREATED", "CONSENTED", "RECORDING", "RECORDED", "UPLOADED", "FAILED", "DELETED"] as const).map((s) => (
+              {(["CREATED", "CONSENTED", "RECORDING", "RECORDED", "UPLOADED", "PROCESSING", "COMPLETED", "REVIEWED", "FAILED", "DELETED"] as const).map((s) => (
                 <option key={s} value={s}>{STATUS_LABEL[s]}</option>
               ))}
             </select>
@@ -96,6 +96,7 @@ export default function SessionsPage() {
                     <th>Status</th>
                     <th>Conditions</th>
                     <th>Label</th>
+                    <th>Risk</th>
                     {source === "SIMULATED" && <th>Split</th>}
                     <th className="num">Length</th>
                     {source === "MOCK" && <th>Created</th>}
@@ -114,6 +115,12 @@ export default function SessionsPage() {
                       <td>
                         {s.violation_label == null ? <span className="faint">—</span> : s.violation_label
                           ? <Badge tone="warn" plain>Violation</Badge> : <Badge plain>None</Badge>}
+                      </td>
+                      <td className="nowrap">
+                        {s.recommendation ? (
+                          <><span className="num">{s.risk?.toFixed(2)}</span>{" "}
+                            <Badge tone={recTone(s.recommendation)} plain>{REC_LABEL[s.recommendation]}</Badge></>
+                        ) : <span className="faint">—</span>}
                       </td>
                       {source === "SIMULATED" && <td>{titleCase(s.split)}</td>}
                       <td className="num">{fmtDuration(s.duration_s)}</td>

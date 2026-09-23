@@ -1,74 +1,58 @@
-# Traceability matrix
-
-Status reflects what exists in this repository and was verified, as of the end of Phase 1.
+# Traceability matrix (final)
 
 **Status key**
-- **Done**: implemented and tested.
-- **Partial**: some parts implemented; the entry says which.
-- **Needs you**: the software is ready, but completion needs human action such as recruiting, recording or ethics approval.
-- **Planned**: a later phase.
+- **Done**: implemented and verified (evidence given).
+- **Done, target not met**: implemented and measured, but the SRS target was missed; the entry says why.
+- **Needs you**: the software is complete, but completion needs recordings or approvals only you can provide.
 
-Evidence refers to code (`path`), tests (`tests/...`) or a measured result.
-
-| ID | Requirement | Phase | Status | Evidence / notes |
-|---|---|---|---|---|
-| FR-1 | Configurable session simulator (DR-1) | 1 | Done | `src/riskfusion/simulator/`, `configs/simulator/v1.yaml`; 5,000 sessions / 68.9M events in 125 s on 1 vCPU; seeded, content-hashed; `tests/unit/test_simulator.py` |
-| FR-2 | Mock recording pipeline with consent management | 1 | Done (software) / Needs you (60 sessions) | Consent, recording, upload, labels, coverage tracker; browser E2E `tests/e2e/record_flow.py`. The 60 recordings require volunteers and ethics approval |
-| FR-3 | Simulator validation against mock data | 2 | Planned | Needs FR-2 corpus + FR-4 |
-| FR-4 | Pretrained detectors on mock recordings (≥4 channels) | 2 | Planned | ffmpeg and OpenCV are available; enrolment photo already captured (A-12) |
-| FR-5 | Browser telemetry from mock sessions | 1–2 | Done (capture) | `frontend/src/lib/telemetry.ts`: tab visibility, full screen, paste length, monitor count, keystroke counts; stored as event.v1 |
-| FR-6 | Measure detector error on mock data | 2 | Planned | Protocol in SRS_AUDIT A-19; output replaces `v1.yaml` noise rates |
-| FR-7 | Explicit UNKNOWN state on every detector | 1 | Done | `*_UNKNOWN` for all 11 channels in the contract; simulator emits them for gaps, low light, outages; unsupported browsers emit `DEVICE_UNKNOWN` |
-| FR-8 | Validate all events; dead-letter with reason | 1 | Done | `contracts.py` (dict and vectorised paths agree, tested); API → `dead_letter_events`; simulator → `data/deadletter/*.jsonl` |
-| FR-9 | 1-second grid with explicit gaps | 3 | Planned | |
-| FR-10 | Out-of-order events within 30 s | 3 | Planned | Late >30 s → dead letter (A-26) |
-| FR-11 | Per-second base features | 3 | Planned | |
-| FR-12 | Windowed aggregates | 3 | Planned | Session reduction per A-10 |
-| FR-13 | Per-session baseline normalisation | 3 | Planned | Scope limited per A-9 |
-| FR-14 | Cross-channel interaction features | 3 | Planned | |
-| FR-15 | Versioned Parquet feature store with schema hash | 3 | Partial | Event store is already versioned Parquet with content/config hashes |
-| FR-16 | Rule baseline | 4 | Planned | |
-| FR-17 | Gradient-boosted primary model | 4 | Planned | |
-| FR-18 | Temporal sequence model | 5 | Planned | |
-| FR-19 | Class-imbalance handling | 4 | Planned | |
-| FR-20 | Calibration on dedicated split | 4 | Partial | Calibration split exists (601 sessions) |
-| FR-21 | Validation-only selection; holdout accessed exactly twice | 1–7 | Done (mechanism) | `data/splits.py` guard, committed IDs + hash + access log; API/UI hide holdout labels; `tests/unit/test_splits.py` |
-| FR-22 | Ablation study | 5 | Planned | |
-| FR-23 | SHAP per prediction | 5 | Planned | |
-| FR-24 | Plain-language explanations | 5 | Planned | |
-| FR-25 | Time-bounded flags | 5 | Planned | A-11 |
-| FR-26 | Global interpretation | 5 | Planned | |
-| FR-27 | Metrics sliced by nuisance factor | 6 | Partial | Slice counts and positive rates per factor already in `/datasets/{id}/breakdown` and the dashboard |
-| FR-28 | FPR disparity with CIs | 6 | Planned | Definition in METRICS.md (A-4) |
-| FR-29 | Fairness mitigation | 6 | Planned | |
-| FR-30 | Missing-channel test | 6 | Planned | Simulator already produces channel outages |
-| FR-31 | +50% FP noise robustness | 6 | Planned | Simulator `pessimism` parameter supports it directly |
-| FR-32 | Operating point by reviewer capacity | 4 | Planned | |
-| FR-33 | Cost-sensitive threshold analysis | 6 | Planned | |
-| FR-34 | POST /score | 7 | Planned | A-5 |
-| FR-35 | GET /health, GET /model-info | 1 / 7 | Partial | `/health` done; `/model-info` returns only once a model exists |
-| FR-36 | Batch scoring CLI | 7 | Planned | |
-| FR-37 | Reviewer HTML report | 7 | Planned | Session timeline component already built |
-| FR-38 | Experiment tracking | 4 | Planned | |
-| FR-39 | One-command reproduction | 7 | Partial | `make simulate splits register` reproduces the data layer; content hash verified identical across runs |
-| FR-40 | Fixed, recorded seeds | 1 | Done | Seed in config and manifest; per-session RNG streams |
-| FR-41 | Drift monitor | 7 | Planned | |
-| FR-42 | Model card | 7 | Planned | |
-| NFR-1/2 | Performance | 3/7 | Partial | Simulator throughput measured; API list/overview ~40 ms on 5,000 sessions |
-| NFR-3 | Scalability (streaming) | 1 | Done for simulator | Sharded generation, 250 sessions per shard |
-| NFR-4/5 | Maintainability, test coverage | 1 | Done so far | 44 Python tests, 91% line coverage; ruff clean; strict TypeScript |
-| NFR-6 | Portability | 1 | Partial | Dockerfiles and compose written but **not built here** (no Docker in the build environment) |
-| NFR-7 | Usability | 1 | Done so far | Dashboard; responsive down to 390 px (no horizontal overflow, verified) |
-| NFR-8 | Auditability | 1 | Done | `audit_logs` for every consent, status change, upload, deletion; status history per session |
-| NFR-9 | Documentation | 1 | Done so far | README, SRS audit, plan, data dictionary, metrics, protocol |
-| ETH-1 | Written consent, withdrawal, deletion | 1 | Done | All-items consent enforced by API and DB CHECK; withdrawal deletes media from disk (tested) |
-| ETH-2 | No participants under 18 | 1 | Done | Operator attestation required; DB CHECK. Age itself is not stored |
-| ETH-3 | Raw recordings deleted at project end | 1 | Partial | Per-recording `retention_until`, overwrite-then-unlink deletion; project-end purge command planned for Phase 7 |
-| ETH-4 | Demographics never model inputs; stored separately | 1 | Done | Separate `demographics` table; nothing outside the fairness path reads it |
-| ETH-5 | Harms section in final report | 7 | Planned | |
-| ETH-6 | Output is a recommendation, never a verdict | 0 | Done | Contract has no VIOLATION recommendation (tested); UI wording checked |
-| ETH-7 | Ethics approval before recording | 1 | Needs you | Consent records the approval reference |
-| D1 | Repository | 0 | Done | |
-| D2 | Simulator + config schema | 1 | Done | Pydantic schema, strict (unknown keys rejected) |
-| D3 | Mock corpus + consent records | 1 | Needs you | De-identified register per A-22 |
-| D4–D16 | Later deliverables | 2–7 | Planned | D12 container: Dockerfiles present, untested |
+| ID | Requirement | Status | Evidence |
+|---|---|---|---|
+| FR-1 | Configurable simulator | Done | `simulator/`, `configs/simulator/v1*.yaml`; 5,000 sessions in 114–125 s; seeded, content-hashed |
+| FR-2 | Mock recording with consent | Done (software) / Needs you (60 sessions) | Recorder, consent, uploads, coverage tracker; browser E2E test |
+| FR-3 | Simulator validated against mock data | Done (code) / Needs you | `validation/mock.py` (KS per feature); `POST /corpus/validate`; runs once sessions are analysed |
+| FR-4 | Pretrained detectors, ≥ 4 channels | Done | presence, identity, attention, environment, audio; tested on a real face video |
+| FR-5 | Browser telemetry | Done | tab, full screen, paste length, monitors, keystroke counts |
+| FR-6 | Measured detector error | Done (code) / Needs you | `measure_detector_errors`, writes `v2_measured.yaml` at ≥ 20 sessions |
+| FR-7 | Explicit UNKNOWN states | Done | all 11 channels; liveness/pose always UNKNOWN (no licensed model) |
+| FR-8 | Validation + dead letter | Done | dict and vectorised validators agree; API and simulator dead-letter |
+| FR-9 | 1 s grid with gaps | Done | `features/engine.build_grid` |
+| FR-10 | Out-of-order within 30 s | Done | `reorder_with_watermark` (unit test) |
+| FR-11/12/14 | Base, windowed, interaction features | Done | 273 features; windows 10/60/300 s + session |
+| FR-13 | Baseline normalisation | Done | scoped per SRS_AUDIT A-9; ablation −0.007 PR-AUC when off |
+| FR-15 | Versioned Parquet feature store | Done | `schema.json` with schema hash |
+| FR-16 | Rule baseline | Done | `configs/models/baseline.yaml` |
+| FR-17 | GBT +15% PR-AUC over baseline | Done | +151% on validation |
+| FR-18 | Temporal model | Done | ROCKET (400 kernels) + logistic regression, PR-AUC 0.828 |
+| FR-19 | Class imbalance | Done | `scale_pos_weight` |
+| FR-20 | Calibration on dedicated split | Done | Platt; ECE 0.016 validation and holdout |
+| FR-21 | Holdout exactly twice | Done | committed access log with 2 entries; third refused |
+| FR-22 | Ablations | Done | channels, normalisation, windows, model families |
+| FR-23 | SHAP, top 5 | Done | LightGBM TreeSHAP, distinct reasons |
+| FR-24 | Plain-language explanations | Done | templates; no verdict language (unit test) |
+| FR-25 | Flags with IoU ≥ 0.5 for ≥ 70% | Done | 84.4% |
+| FR-26 | Global interpretation | Done | importance + partial dependence (Performance page) |
+| FR-27 | Sliced metrics | Done | 6 factors, bootstrap CIs |
+| FR-28 | FPR disparity < 1.3 | **Done, target not met** | holdout 1.15–2.05; head covering worst |
+| FR-29 | ≥ 1 mitigation measured | Done | reweighting measured; not adopted (worsened lighting) |
+| FR-30 | Missing channel never increases risk | Done | guaranteed (monotone model); 0% on validation and holdout |
+| FR-31 | +50% FP robustness | Done | PR-AUC 0.915 → 0.889 |
+| FR-32 | Operating point from capacity | Done | 3% clean-session budget; tiers 0.5% / 3% / 10% |
+| FR-33 | Cost-sensitive analysis | Done | cost ratios 1–50 |
+| FR-34 | POST /score, p95 < 500 ms | Done | p95 342 ms, 87-min session |
+| FR-35 | /health, /model-info | Done | |
+| FR-36 | Batch CLI | Done | `riskfusion score-dir IN OUT` |
+| FR-37 | HTML reviewer report | Done | `/sessions/{id}/report`, batch CLI |
+| FR-38 | Experiment tracking | Done | `runs/` + index; Performance page |
+| FR-39 | One-command reproduction | Done | `make pipeline` |
+| FR-40 | Seeds recorded | Done | configs, manifests, bundle |
+| FR-41 | Drift monitor | Done | PSI, review rate, Wilson-bounded FPR alerts |
+| FR-42 | Model card | Done | `docs/MODEL_CARD.md`, generated |
+| NFR-1/2 | Performance | Done | features 0.035 s/session; scoring p95 342 ms |
+| NFR-3 | Streaming/scale | Done | sharded simulator and feature builder |
+| NFR-4/5 | Maintainability, tests | Done | 64 automated tests + browser E2E; ruff, mypy, strict TS |
+| NFR-6 | Portability | Partial | Dockerfiles written, not built in this environment |
+| NFR-7/8/9 | Usability, audit, docs | Done | responsive dashboard; audit log; docs set |
+| ETH-1..4, 6 | Consent, adults, deletion, demographics, no verdicts | Done | see SRS_AUDIT and tests |
+| ETH-5 | Harms section | Done | FINAL_REPORT §4 |
+| ETH-7 | Ethics approval | Needs you | reference recorded on each consent |
+| D1–D16 | Deliverables | Done except D3 (needs recordings), D16 (your presentation) | |

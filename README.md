@@ -1,106 +1,102 @@
 # RiskFusion
 
-RiskFusion helps human reviewers decide **which online exam sessions deserve a closer look**. It combines
-signals from video, audio and browser activity into a calibrated, explainable risk score. It produces
-**review recommendations only, never verdicts** (SRS CON-5, ETH-6).
+RiskFusion helps human reviewers decide **which online exam sessions deserve a closer look**. It fuses signals from
+video, audio and browser activity into a calibrated, explainable risk score and a review recommendation. It never
+produces a verdict (SRS CON-5, ETH-6).
 
-This repository is the working prototype built phase by phase from `SRS v2.0`. It currently covers
-**Phase 0 and Phase 1**:
+This is the complete prototype built from SRS v2.0, Phases 0–7:
+- **Recording:** consented mock-session recording from the browser.
+- **Signal extraction:** pretrained detectors applied to the recordings.
+- **Data:** a 5,000-session simulator and a versioned feature store.
+- **Models:** a fusion model with calibration, explanations and time-bounded flags.
+- **Evaluation:** fairness and robustness evaluation, and a drift monitor.
+- **Serving:** a scoring API, reviewer HTML reports, and a review queue with reviewer decisions.
+- **Dashboard:** a web dashboard covering all of the above.
 
-- a web dashboard and API for consent, real webcam recording of mock sessions, and browser telemetry;
-- a PostgreSQL store with a full audit trail;
-- the session simulator (5,000 labelled sessions in about 2 minutes);
-- the DR-4 label store;
-- leakage-safe splits with a sealed holdout.
+Start with `docs/FINAL_REPORT.md` and `docs/MODEL_CARD.md`.
 
-Detectors, features, models, explanations and reports are Phases 2–7 and are **not built yet**. The dashboard
-says so where they will appear rather than showing placeholders. See `docs/IMPLEMENTATION_PLAN.md` and
-`docs/TRACEABILITY.md` for the exact status of every requirement.
+![Flagged session](docs/screenshots/15-flagged-session.png)
 
-![Recording console](docs/screenshots/06-recording-cue.png)
+## Results (sealed holdout, 750 sessions)
 
-## Quick start (local)
+| | Fusion model | Rule baseline | SRS target |
+|---|---|---|---|
+| PR-AUC | **0.835** (95% CI 0.73–0.92) | 0.343 | ≥ +15% over baseline |
+| Recall at operating point | **84%** | 31% | ≥ 80% |
+| Calibration error (ECE) | **0.016** | 0.232 | < 0.05 |
+| Missing channel raises a score | **never** (guaranteed) | — | never |
+| FPR disparity across conditions | 1.15–2.05 | — | < 1.3 (**not met**) |
+
+These are results on **simulated data**. See the limitations in the model card.
+
+## Quick start
 
 Requirements:
-- Python 3.10+
-- Node 20+
-- PostgreSQL 14+
-- ffmpeg (from Phase 2)
-- Chrome, Edge or Firefox to record
+- Python 3.10+, Node 20+, PostgreSQL 14+ and ffmpeg.
+- Chrome, Edge or Firefox for recording.
+- About 3 GB of disk space.
 
 ```bash
-cp .env.example .env              # adjust RISKFUSION_DATABASE_URL if needed
-make install                      # Python + frontend dependencies
-make db                           # role + databases riskfusion and riskfusion_test
-make migrate                      # schema (Alembic)
-make simulate                     # 5,000 sessions -> data/synthetic/ (≈2 min, 1.2 GB)
-make register                     # sessions, labels, splits -> PostgreSQL
-make api                          # terminal 1: http://127.0.0.1:8000  (OpenAPI at /docs)
-make web                          # terminal 2: http://localhost:5173
+cp .env.example .env
+make install          # Python + frontend dependencies
+make db               # PostgreSQL role and databases
+make pipeline         # models, data, features, training, evaluation, scoring (~12 min)
+make api              # terminal 1: http://127.0.0.1:8000   (OpenAPI: /docs)
+make web              # terminal 2: http://localhost:5173
 ```
 
-`make simulate` reproduces the committed dataset exactly: same seed, same content hash
-(`8815f892…`). The splits in `data/splits/` and their sealed-holdout manifest are committed and must not be
-regenerated. `make splits` refuses to overwrite them by design.
+`make pipeline` is the one-command reproduction (FR-39). It regenerates the datasets from fixed seeds,
+rebuilds features, retrains and re-evaluates. `make reproduce` checks the retrained metrics against the committed
+model: they match to 0.00 percentage points. The trained model, evaluation reports and experiment log are committed,
+so the dashboard and API work before you run the pipeline. Only the simulated-session views need the generated
+data.
 
-### With Docker
+Docker: `docker compose up --build` gives the dashboard on http://localhost:8080. The Docker files were written
+but could not be built in the development environment.
 
-```bash
-docker compose up --build         # dashboard on http://localhost:8080
-```
-The compose file starts PostgreSQL, the API (which runs migrations on start) and the dashboard behind nginx.
-To use simulated data, run `make simulate` on the host (it writes to `./data`, mounted into the API), then
-`docker compose exec backend python scripts/register_dataset.py sim-v1-s20260923-n5000`.
-*The Docker files were written and reviewed but could not be built in the development environment. Please
-report any problem.*
+## Using it
 
-## Recording a mock session
+1. **Record** (`docs/MOCK_PROTOCOL.md`): register an adult participant, record consent, create a session, check the
+   equipment, take the enrolment photo, record, then upload.
+2. **Analyse:** on the session page choose *Analyse recording*. The detectors run on the video, then features and the
+   risk model. You get a risk score, a 90% band, a review tier, reasons, moments to check and an HTML report.
+3. **Review:** the *Review queue* orders scored sessions by risk. Record a decision; decisions are stored apart
+   from training labels, and the overturn rate is tracked.
+4. **Measure** (FR-3, FR-6): with 20 or more analysed mock sessions, `POST /corpus/validate` measures real detector error
+   rates, compares the simulator with your recordings, and writes `configs/simulator/v2_measured.yaml`.
 
-Follow `docs/MOCK_PROTOCOL.md`. In short:
-
-1. **Participants → Register participant** (confirm 18+). The participant then reads and signs the consent form.
-2. **New session**: choose the participant, a script and the real room conditions, then confirm consent.
-3. **Check equipment**: camera, microphone level, and the enrolment photo.
-4. **Record**: the participant answers the practice quiz and follows the on-screen cues. Stop, review, upload.
-
-The recording is stored with its SHA-256. The ground-truth label is created from the script schedule, and the
-session page shows playback, a timeline of truth, cues and telemetry, and the full status history.
-
-Use the *Cue rehearsal* script for a two-minute test that does not count toward the corpus.
+**API:**
+- `POST /score` takes event.v1 events and returns a risk_assessment.v1.
+- `GET /model-info` and `GET /health`.
+- Batch scoring: `riskfusion score-dir <input-dir> <output-dir>` (files named `<session_id>.jsonl`), which writes
+  assessments and HTML reports.
 
 ## Tests
 
 ```bash
-make test        # 44 unit + integration tests against PostgreSQL (database riskfusion_test is rebuilt)
-make e2e         # full browser run with Chromium's synthetic camera: consent → record → cue → upload
-make lint        # ruff + strict TypeScript
+make test     # 64 unit + integration tests against PostgreSQL, including a real video through the whole pipeline
+make e2e      # browser test with Chromium's synthetic camera: consent -> record -> analyse -> review
+make lint     # ruff, mypy, strict TypeScript
 ```
 
-The end-to-end test drives the real `getUserMedia → MediaRecorder → upload` path. It then checks the
-stored WebM header, the telemetry (including paste length) and the label through the API.
-
-## Repository layout
+## Layout
 
 ```
-src/riskfusion/          data-science package: contracts, simulator, splits, CLI
-backend/riskfusion_api/  FastAPI service: models, routers, services, storage
-frontend/                React + TypeScript dashboard
-configs/                 simulator config (v1.yaml), mock scripts
-contracts/               generated JSON Schemas (event.v1, risk_assessment.v1)
-migrations/              Alembic migrations
-data/splits/             committed split manifests + holdout access log
-docs/                    SRS audit, plan, traceability, data dictionary, metrics, protocol, consent form
-tests/                   unit, integration (PostgreSQL), e2e (browser)
+src/riskfusion/     contracts, simulator, extract (detectors), features, modeling, validation, serving, CLI
+backend/            FastAPI service (PostgreSQL, storage, background analysis)
+frontend/           React + TypeScript dashboard
+configs/            simulator versions, mock scripts, baseline weights
+models/trained/     the deployed model bundle
+reports/evaluation/ evaluation, fairness, robustness, drift, holdout results
+runs/               experiment log
+data/splits/        split manifests + sealed-holdout access log (committed)
+docs/               SRS audit, plan, traceability, model card, final report, data dictionary, metrics, protocol
 ```
-
-## Measured results so far
-
-- Simulator: 5,000 sessions and 68.9M events in 125 s on 1 vCPU, with 0 rejected events and a 6.44% violation rate (SRS range 3–8%).
-- Splits: train 2,998, validation 651, calibration 601, sealed holdout 750. The violation rate is 6.4–6.5% in each, and every profile appears in every split. Holdout accesses so far: 0 of 2.
-- API: list and overview endpoints respond in about 40 ms over 5,000 sessions. A single simulated session's signal timeline is read from Parquet in about 0.3 s.
 
 ## Important limitations
 
-- The simulator's detector error rates are the SRS's **unmeasured planning estimates** (DR-3), made more pessimistic. FR-6 replaces them with rates measured on the mock corpus.
-- There is no login. The prototype is for local use by the project team. The operator name typed in the sidebar is recorded in the audit log (see `docs/SRS_AUDIT.md`, A-20).
-- Monitor count is only observable in Chromium browsers; elsewhere it is recorded as unknown.
+- Trained on simulated data with estimated detector error rates. The consented mock corpus (60 sessions) still
+  has to be recorded before FR-3 and FR-6 can run on real volunteers.
+- The speaker detector is a heuristic. There is no licensed liveness model, and gaze is a head-pose proxy.
+- False alerts are higher for head-covered candidates and unstable connections. Read FINAL_REPORT §4 before any use.
+- There is no authentication; the prototype is for local research use.

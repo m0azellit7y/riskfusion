@@ -3,6 +3,9 @@ import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { Icon } from "./components/ui";
 import { operatorName } from "./lib/api";
 import DatasetsPage from "./pages/DatasetsPage";
+import FairnessPage from "./pages/FairnessPage";
+import ModelPage from "./pages/ModelPage";
+import ReviewQueuePage from "./pages/ReviewQueuePage";
 import NewSessionPage from "./pages/NewSessionPage";
 import OverviewPage from "./pages/OverviewPage";
 import ParticipantDetailPage from "./pages/ParticipantDetailPage";
@@ -63,6 +66,18 @@ export default function App() {
           <NavLink to="/participants">
             <Icon name="people" /> Participants
           </NavLink>
+          <NavLink to="/review">
+            <Icon name="review" /> Review queue
+          </NavLink>
+        </nav>
+        <div className="nav-group">Model</div>
+        <nav className="nav">
+          <NavLink to="/model">
+            <Icon name="model" /> Performance
+          </NavLink>
+          <NavLink to="/fairness">
+            <Icon name="fairness" /> Fairness and monitoring
+          </NavLink>
         </nav>
         <div className="nav-group">Data</div>
         <nav className="nav">
@@ -95,6 +110,9 @@ export default function App() {
               <Route path="/sessions/:id" element={<SessionDetailPage />} />
               <Route path="/sessions/:id/record" element={<RecordPage />} />
               <Route path="/datasets" element={<DatasetsPage />} />
+              <Route path="/review" element={<ReviewQueuePage />} />
+              <Route path="/model" element={<ModelPage />} />
+              <Route path="/fairness" element={<FairnessPage />} />
               <Route path="/system" element={<SystemPage />} />
               <Route
                 path="*"

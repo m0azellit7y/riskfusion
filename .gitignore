@@ -19,3 +19,7 @@ data/deadletter/*
 !data/deadletter/.gitkeep
 *.egg-info/
 *.tsbuildinfo
+models/pretrained/*
+!models/pretrained/README.md
+data/features/*
+reports/batch/

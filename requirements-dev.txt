@@ -5,3 +5,6 @@ httpx==0.28.1
 ruff==0.16.8
 mypy==2.3.1
 types-PyYAML
+scikit-image==0.26.0   # test fixture: a real face photo for the detector tests
+psutil
+playwright==1.56.0     # browser E2E (then: playwright install chromium)

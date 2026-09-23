@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AssessmentPanel } from "../components/AssessmentPanel";
 import { Timeline, type Lane } from "../components/Timeline";
 import { Badge, Empty, ErrorNotice, Loading, Modal, PageHeader, Panel, StatusBadge, useAsync, useToast } from "../components/ui";
 import { API, api, type SessionDetail, type TelemetryEvent } from "../lib/api";
@@ -213,13 +214,7 @@ export default function SessionDetailPage() {
               <p className="muted" style={{ margin: 0 }}>The timeline appears once the session has been recorded.</p>
             )}
           </Panel>
-          <Panel title="Risk assessment">
-            <p className="muted" style={{ margin: 0 }}>
-              Not available yet. Automatic signal extraction (Phase 2), features (Phase 3) and the calibrated risk model
-              (Phase 4) have not been built. When they are, this session's review recommendation and its explanation
-              will appear here.
-            </p>
-          </Panel>
+          <AssessmentPanel session={s} onChange={sess.reload} />
           {mock && (
             <Panel title="Status history" flush>
               <div className="table-wrap">

@@ -145,6 +145,8 @@ export interface Session {
   ended_at: string | null;
   violation_label: boolean | null;
   split: string | null;
+  risk?: number | null;
+  recommendation?: string | null;
 }
 export interface Recording {
   id: string;
@@ -239,4 +241,39 @@ export interface TelemetryEvent {
   payload: Record<string, unknown>;
   confidence: number;
   quality: Record<string, unknown> | null;
+}
+
+// ---- analysis (Phases 4-7) ----
+export type Recommendation = "NO_ACTION" | "ROUTINE_REVIEW" | "HUMAN_REVIEW" | "PRIORITY_REVIEW";
+export interface Flag {
+  flag_id: string;
+  type: string;
+  t_start_ms: number;
+  t_end_ms: number;
+  confidence: number;
+  explanation: string;
+  evidence_ref?: string | null;
+}
+export interface Assessment {
+  schema: string;
+  session_id: string;
+  overall_risk: number;
+  calibrated: boolean;
+  recommendation: Recommendation;
+  confidence_band: [number, number];
+  flags: Flag[];
+  top_contributors: { feature: string; shap: number; direction: string; explanation: string }[];
+  channels_available: string[];
+  channels_missing: string[];
+  model_version: string;
+  feature_version: string;
+  created_at?: string;
+  reviews?: { verdict: string; note: string | null; reviewer: string; created_at: string }[];
+}
+export interface Job {
+  id: string;
+  status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED";
+  stage: string | null;
+  progress: number;
+  message: string | null;
 }
