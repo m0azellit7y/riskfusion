@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://riskfusion.local/contracts/risk_assessment.v1.schema.json",
+  "title": "risk_assessment.v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "session_id",
+    "overall_risk",
+    "calibrated",
+    "recommendation",
+    "confidence_band",
+    "flags",
+    "top_contributors",
+    "channels_available",
+    "channels_missing",
+    "model_version",
+    "feature_version"
+  ],
+  "properties": {
+    "schema": {
+      "const": "risk_assessment.v1"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "overall_risk": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "calibrated": {
+      "type": "boolean"
+    },
+    "recommendation": {
+      "enum": [
+        "NO_ACTION",
+        "ROUTINE_REVIEW",
+        "HUMAN_REVIEW",
+        "PRIORITY_REVIEW"
+      ]
+    },
+    "confidence_band": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "flag_id",
+          "type",
+          "t_start_ms",
+          "t_end_ms",
+          "confidence",
+          "explanation"
+        ],
+        "properties": {
+          "flag_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "t_start_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "t_end_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "top_contributors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "feature",
+          "shap",
+          "direction"
+        ],
+        "properties": {
+          "feature": {
+            "type": "string"
+          },
+          "shap": {
+            "type": "number"
+          },
+          "direction": {
+            "enum": [
+              "increases_risk",
+              "decreases_risk"
+            ]
+          }
+        }
+      }
+    },
+    "channels_available": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "presence",
+          "identity",
+          "liveness",
+          "attention",
+          "environment",
+          "pose",
+          "audio_voice",
+          "audio_event",
+          "screen",
+          "device",
+          "behavioral"
+        ]
+      }
+    },
+    "channels_missing": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "presence",
+          "identity",
+          "liveness",
+          "attention",
+          "environment",
+          "pose",
+          "audio_voice",
+          "audio_event",
+          "screen",
+          "device",
+          "behavioral"
+        ]
+      }
+    },
+    "model_version": {
+      "type": "string"
+    },
+    "feature_version": {
+      "type": "string"
+    }
+  }
+}
