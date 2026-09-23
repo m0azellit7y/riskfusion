@@ -1,0 +1,31 @@
+# docker compose up --build   →  dashboard on http://localhost:8080
+# NOTE: written and reviewed, but not built in the development sandbox (no Docker available there).
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-riskfusion}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-riskfusion}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-riskfusion}"]
+      interval: 5s
+      retries: 10
+  backend:
+    build: {context: ., dockerfile: docker/backend.Dockerfile}
+    environment:
+      RISKFUSION_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-riskfusion}:${POSTGRES_PASSWORD:-change-me}@db:5432/${POSTGRES_DB:-riskfusion}
+      RISKFUSION_CORS_ORIGINS: http://localhost:8080
+    volumes:
+      - media:/var/lib/riskfusion/storage
+      - ./data:/app/data
+    depends_on:
+      db: {condition: service_healthy}
+  frontend:
+    build: {context: ., dockerfile: docker/frontend.Dockerfile}
+    ports: ["8080:80"]
+    depends_on: [backend]
+volumes:
+  pgdata:
+  media:

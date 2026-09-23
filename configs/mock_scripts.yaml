@@ -1,0 +1,92 @@
+# Mock-session scripts (SRS DR-2).
+#
+# Labels for mock sessions come from the assigned script, never from later human judgement of the
+# footage. Each episode is shown to the participant as an on-screen cue at `start_s` and ends at
+# `start_s + duration_s`; those scheduled intervals become the interval-level ground truth.
+#
+# Sessions are 20-30 minutes (DR-2). `rehearsal-short` exists only to test equipment; rehearsal
+# sessions are excluded from the corpus and from all counts toward the FR-2 target.
+
+script_version: "1.0"
+min_duration_s: 1200
+max_duration_s: 1800
+
+scripts:
+  clean:
+    title: Clean session
+    violation: false
+    profile: clean
+    summary: Answer the quiz normally. Scratch paper is allowed.
+    episodes: []
+
+  phone_user:
+    title: Phone use
+    violation: true
+    profile: phone_user
+    summary: Twice during the session, pick up a phone and read from it.
+    episodes:
+      - {type: PHONE_USE, start_s: 300, duration_s: 45, instruction: "Pick up your phone and read from it until this message disappears."}
+      - {type: PHONE_USE, start_s: 840, duration_s: 30, instruction: "Pick up your phone again and read from it until this message disappears."}
+
+  second_person:
+    title: Second person present
+    violation: true
+    profile: second_person
+    requires_helper: true
+    summary: A consenting helper enters the camera view and talks with the participant.
+    episodes:
+      - {type: SECOND_PERSON, start_s: 480, duration_s: 40, instruction: "Helper: sit next to the participant and discuss the current question until this message disappears."}
+      - {type: SECOND_PERSON, start_s: 1020, duration_s: 25, instruction: "Helper: come back into view and point at the screen until this message disappears."}
+
+  impersonation:
+    title: Impersonation
+    violation: true
+    profile: impersonation
+    requires_helper: true
+    summary: The registered participant enrols; the helper then takes the session in their place.
+    episodes:
+      - {type: IMPERSONATION, start_s: 30, duration_s: -1, instruction: "Swap now: the helper takes the seat and completes the rest of the session."}
+
+  tab_switcher:
+    title: Tab switching
+    violation: true
+    profile: tab_switcher
+    summary: Leave the quiz tab to look something up, and paste an answer.
+    episodes:
+      - {type: TAB_SWITCH, start_s: 360, duration_s: 20, instruction: "Switch to another browser tab and search for the answer to the current question, then return."}
+      - {type: TAB_SWITCH, start_s: 900, duration_s: 30, instruction: "Switch tabs again, copy some text, come back and paste it into an answer."}
+
+  remote_assisted:
+    title: Remote assistance
+    violation: true
+    profile: remote_assisted
+    requires_helper: true
+    summary: An off-camera helper whispers answers.
+    episodes:
+      - {type: REMOTE_ASSISTANCE, start_s: 540, duration_s: 60, instruction: "Helper (off camera): quietly read answers aloud. Participant: type what you hear."}
+
+  note_reader:
+    title: Reading notes
+    violation: true
+    profile: note_reader
+    summary: Read from prepared paper notes below the camera view.
+    episodes:
+      - {type: NOTE_READING, start_s: 240, duration_s: 60, instruction: "Read from your paper notes below the screen until this message disappears."}
+      - {type: NOTE_READING, start_s: 720, duration_s: 45, instruction: "Read from your notes again until this message disappears."}
+
+  rehearsal-short:
+    title: Equipment rehearsal (not part of the corpus)
+    violation: false
+    profile: clean
+    rehearsal: true
+    summary: A short run to check the camera, microphone and upload. Excluded from the dataset.
+    episodes: []
+
+  rehearsal-cues:
+    title: Cue rehearsal (not part of the corpus)
+    violation: false
+    profile: clean
+    rehearsal: true
+    summary: A short run that shows one practice cue after 20 seconds. Excluded from the dataset.
+    episodes:
+      - {type: PHONE_USE, start_s: 20, duration_s: 15, instruction: "Practice cue: pick up your phone until this message disappears."}
