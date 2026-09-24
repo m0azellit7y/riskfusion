@@ -184,7 +184,57 @@ def session_report(sid: str, db: Session = Depends(get_db)) -> HTMLResponse:
         shards = [str(path / f) for f in idx.loc[idx["session_id"] == sid, "shard"]]
         df = pads.dataset(shards, format="parquet").to_table(filter=pads.field("session_id") == sid).to_pandas()
     ra, sf = score_frame(sid, df, float(s.duration_s or 1.0), model)
-    return HTMLResponse(render_report(ra, float(s.duration_s or len(sf.grid)), sf.grid, model))
+    return HTMLResponse(render_report(ra, float(s.duration_s or len(sf.grid)), sf.grid, model, df, _report_meta(db, s)))
+
+
+def _report_meta(db: Session, s: ExamSession) -> dict[str, Any]:
+    """Session context for the reviewer report: who, when, which script, under which conditions."""
+    from ..services.scripts import get_script
+
+    def yn(v: bool | None) -> str:
+        return "—" if v is None else ("yes" if v else "no")
+
+    code = db.scalar(select(Participant.code).where(Participant.id == s.participant_id)) if s.participant_id else None
+    try:
+        title = get_script(s.script_id)["title"] if s.script_id else (s.behavior_profile or "").replace("_", " ")
+    except KeyError:
+        title = s.script_id or ""
+    label = db.get(Label, s.id)
+    ua = (s.browser or {}).get("userAgent", "") if s.browser else ""
+    browser = next((b for b in ("Edg/", "Chrome/", "Firefox/", "Safari/") if b in ua), "")
+    reviews = db.scalars(select(ReviewVerdict).where(ReviewVerdict.session_id == s.id).order_by(ReviewVerdict.id)).all()
+    return {
+        "participant_code": code or (s.id if s.source == "SIMULATED" else None),
+        "source": "Recorded mock session" if s.source == "MOCK" else f"Simulated ({s.dataset_version})",
+        "started_at": s.started_at.strftime("%Y-%m-%d %H:%M UTC") if s.started_at else "",
+        "script_id": s.script_id,
+        "script_title": title + (" (rehearsal)" if s.is_rehearsal else ""),
+        "lighting": s.lighting or "—",
+        "webcam_class": (s.webcam_class or "—").upper(),
+        "room_noise": s.room_noise or "—",
+        "eyewear": yn(s.eyewear),
+        "head_covering": yn(s.head_covering),
+        "browser": browser.rstrip("/").replace("Edg", "Edge") or "—",
+        "script_intervals": (label.intervals if label and label.intervals else []),
+        "recordings": [
+            {
+                "kind": "Video and audio" if r.kind == "webcam_av" else "Enrolment photo",
+                "size": f"{r.size_bytes / 1e6:.1f} MB",
+                "sha256": r.sha256,
+            }
+            for r in s.recordings
+            if r.status == "STORED"
+        ],
+        "reviews": [
+            {
+                "at": v.created_at.strftime("%Y-%m-%d %H:%M"),
+                "reviewer": v.reviewer,
+                "verdict": v.verdict.replace("_", " ").lower(),
+                "note": v.note,
+            }
+            for v in reviews
+        ],
+    }
 
 
 class ReviewIn(BaseModel):
